@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+
+# Config files (may contain tokens/personal data)
+config.json
+state.json
+mail-templates.json
+mail-undo.json
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Launch materials (not for public repo)
+REDDIT_LAUNCH.md

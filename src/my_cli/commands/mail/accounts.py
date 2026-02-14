@@ -1,0 +1,263 @@
+"""Account and mailbox listing commands: inbox, accounts, mailboxes."""
+
+from my_cli.config import resolve_account, FIELD_SEPARATOR
+from my_cli.util.applescript import escape, run
+from my_cli.util.formatting import truncate, format_output
+
+
+# ---------------------------------------------------------------------------
+# inbox
+# ---------------------------------------------------------------------------
+
+def cmd_inbox(args) -> None:
+    """List unread counts and recent messages across all accounts."""
+    script = """
+    tell application "Mail"
+        set output to ""
+        set acctList to every account
+        repeat with i from 1 to (count of acctList)
+            set acct to item i of acctList
+            set acctName to name of acct
+            set acctEnabled to enabled of acct
+            if acctEnabled then
+                repeat with mbox in (mailboxes of acct)
+                    if name of mbox is "INBOX" then
+                        try
+                            set unreadCount to unread count of mbox
+                            set totalCount to count of messages of mbox
+                            set output to output & acctName & "{FIELD_SEPARATOR}" & unreadCount & "{FIELD_SEPARATOR}" & totalCount & linefeed
+                            if unreadCount > 0 then
+                                set unreadMsgs to (every message of mbox whose read status is false)
+                                set previewCount to 3
+                                if (count of unreadMsgs) < previewCount then set previewCount to count of unreadMsgs
+                                repeat with j from 1 to previewCount
+                                    set m to item j of unreadMsgs
+                                    set output to output & "MSG\x1F" & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & linefeed
+                                end repeat
+                            end if
+                        end try
+                        exit repeat
+                    end if
+                end repeat
+            end if
+        end repeat
+        return output
+    end tell
+    """
+
+    result = run(script)
+
+    if not result.strip():
+        format_output(args, "No mail accounts found or no INBOX mailboxes available.")
+        return
+
+    # Build JSON data
+    accounts = []
+    current = None
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if parts[0] == "MSG" and len(parts) >= 6:
+            _, acct, msg_id, subject, sender, date = parts[:6]
+            if current:
+                current["recent_unread"].append({
+                    "id": int(msg_id) if msg_id.isdigit() else msg_id,
+                    "subject": subject,
+                    "sender": sender,
+                    "date": date,
+                })
+        elif len(parts) >= 3:
+            acct, unread, total = parts[:3]
+            current = {
+                "account": acct,
+                "unread": int(unread) if unread.isdigit() else 0,
+                "total": int(total) if total.isdigit() else 0,
+                "recent_unread": [],
+            }
+            accounts.append(current)
+
+    # Build text output
+    text = "Inbox Summary\n" + "=" * 50
+    current_account = None
+    total_unread = 0
+
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if parts[0] == "MSG" and len(parts) >= 6:
+            _, acct, msg_id, subject, sender, date = parts[:6]
+            text += f"\n    [{msg_id}] {truncate(subject, 45)}"
+            text += f"\n      From: {sender}"
+        elif len(parts) >= 3:
+            acct, unread, total = parts[:3]
+            unread_int = int(unread) if unread.isdigit() else 0
+            total_int = int(total) if total.isdigit() else 0
+            total_unread += unread_int
+            if current_account != acct:
+                text += f"\n\n{acct}:"
+                text += f"\n  Unread: {unread_int} / Total: {total_int}"
+                if unread_int > 0:
+                    text += "\n  Recent unread:"
+                current_account = acct
+
+    text += f"\n\n{'=' * 50}"
+    text += f"\nTotal unread across all accounts: {total_unread}"
+    format_output(args, text, json_data=accounts)
+
+
+# ---------------------------------------------------------------------------
+# accounts
+# ---------------------------------------------------------------------------
+
+def cmd_accounts(args) -> None:
+    """List configured mail accounts."""
+    script = """
+    tell application "Mail"
+        set output to ""
+        repeat with acct in (every account)
+            set acctName to name of acct
+            set acctFullName to full name of acct
+            set acctEmail to user name of acct
+            set acctEnabled to enabled of acct
+            set output to output & acctName & "{FIELD_SEPARATOR}" & acctFullName & "{FIELD_SEPARATOR}" & acctEmail & "{FIELD_SEPARATOR}" & acctEnabled & linefeed
+        end repeat
+        return output
+    end tell
+    """
+
+    result = run(script)
+
+    if not result.strip():
+        format_output(args, "No mail accounts found.")
+        return
+
+    # Build JSON data
+    accounts = []
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) >= 4:
+            accounts.append({
+                "name": parts[0],
+                "full_name": parts[1],
+                "email": parts[2],
+                "enabled": parts[3].lower() == "true",
+            })
+
+    # Build text output
+    text = "Mail Accounts:"
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) >= 4:
+            name, full_name, email, enabled = parts[:4]
+            status = "enabled" if enabled.lower() == "true" else "disabled"
+            text += f"\n- {name}\n  Email: {email}\n  Name: {full_name}\n  Status: {status}"
+    format_output(args, text, json_data=accounts)
+
+
+# ---------------------------------------------------------------------------
+# mailboxes
+# ---------------------------------------------------------------------------
+
+def cmd_mailboxes(args) -> None:
+    """List mailboxes with unread counts."""
+    account = resolve_account(getattr(args, "account", None))
+
+    if account:
+        acct_escaped = escape(account)
+        script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            repeat with mb in (every mailbox of acct)
+                set mbName to name of mb
+                set mbUnread to unread count of mb
+                set output to output & mbName & "{FIELD_SEPARATOR}" & mbUnread & linefeed
+            end repeat
+            return output
+        end tell
+        """
+    else:
+        script = """
+        tell application "Mail"
+            set output to ""
+            repeat with acct in (every account)
+                set acctName to name of acct
+                repeat with mb in (every mailbox of acct)
+                    set mbName to name of mb
+                    set mbUnread to unread count of mb
+                    set output to output & acctName & "{FIELD_SEPARATOR}" & mbName & "{FIELD_SEPARATOR}" & mbUnread & linefeed
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+
+    result = run(script)
+
+    if not result.strip():
+        msg = f"No mailboxes found in account '{account}'." if account else "No mailboxes found."
+        format_output(args, msg)
+        return
+
+    # Build JSON data
+    mailboxes = []
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if account and len(parts) >= 2:
+            mailboxes.append({"name": parts[0], "unread": int(parts[1]) if parts[1].isdigit() else 0})
+        elif not account and len(parts) >= 3:
+            mailboxes.append({
+                "account": parts[0],
+                "name": parts[1],
+                "unread": int(parts[2]) if parts[2].isdigit() else 0,
+            })
+
+    # Build text output
+    header = f"Mailboxes in {account}:" if account else "All Mailboxes:"
+    text = header
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if account and len(parts) >= 2:
+            name, unread = parts[:2]
+            unread_int = int(unread) if unread.isdigit() else 0
+            unread_str = f" ({unread_int} unread)" if unread_int > 0 else ""
+            text += f"\n- {name}{unread_str}"
+        elif not account and len(parts) >= 3:
+            acct, name, unread = parts[:3]
+            unread_int = int(unread) if unread.isdigit() else 0
+            unread_str = f" ({unread_int} unread)" if unread_int > 0 else ""
+            text += f"\n- {name}{unread_str} [{acct}]"
+    format_output(args, text, json_data=mailboxes)
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+def register(subparsers) -> None:
+    """Register account-related mail subcommands."""
+    # inbox
+    p = subparsers.add_parser("inbox", help="Unread counts + recent messages across all accounts")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_inbox)
+
+    # accounts
+    p = subparsers.add_parser("accounts", help="List configured mail accounts")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_accounts)
+
+    # mailboxes
+    p = subparsers.add_parser("mailboxes", help="List mailboxes with unread counts")
+    p.add_argument("-a", "--account", help="Filter to a specific account")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_mailboxes)

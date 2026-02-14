@@ -1,0 +1,570 @@
+"""Inbox management tools: process-inbox, clean-newsletters, weekly-review."""
+
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+from my_cli.config import (
+    APPLESCRIPT_TIMEOUT_LONG,
+    DEFAULT_MAILBOX,
+    FIELD_SEPARATOR,
+    MAX_MESSAGES_BATCH,
+    resolve_account,
+)
+from my_cli.util.applescript import escape, run
+from my_cli.util.dates import to_applescript_date
+from my_cli.util.formatting import format_output, truncate
+from my_cli.util.mail_helpers import extract_email
+
+
+# ---------------------------------------------------------------------------
+# process-inbox — categorize unread messages and suggest actions
+# ---------------------------------------------------------------------------
+
+def cmd_process_inbox(args) -> None:
+    """Read-only diagnostic: categorize unread messages and output action plan."""
+    account = resolve_account(getattr(args, "account", None))
+    limit = getattr(args, "limit", 50)
+
+    # Patterns for categorizing notifications (reuse from ai.py triage)
+    noreply_patterns = [
+        "noreply", "no-reply", "notifications", "mailer-daemon",
+        "donotreply", "updates@", "news@", "info@", "support@", "billing@"
+    ]
+
+    # Build AppleScript to scan INBOX(es)
+    if account:
+        acct_escaped = escape(account)
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set totalFound to 0
+            set acct to account "{acct_escaped}"
+            set acctName to name of acct
+            if enabled of acct then
+                repeat with mbox in (mailboxes of acct)
+                    if name of mbox is "INBOX" then
+                        try
+                            set unreadMsgs to (every message of mbox whose read status is false)
+                            set cap to {limit}
+                            if (count of unreadMsgs) < cap then set cap to (count of unreadMsgs)
+                            repeat with j from 1 to cap
+                                set m to item j of unreadMsgs
+                                set output to output & acctName & "\x1F" & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & "\x1F" & (flagged status of m) & linefeed
+                                set totalFound to totalFound + 1
+                            end repeat
+                        end try
+                        exit repeat
+                    end if
+                end repeat
+            end if
+            return output
+        end tell
+        """
+    else:
+        # Scan all enabled accounts
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set totalFound to 0
+            repeat with acct in (every account)
+                if totalFound >= {limit} then exit repeat
+                if enabled of acct then
+                    set acctName to name of acct
+                    repeat with mbox in (mailboxes of acct)
+                        if totalFound >= {limit} then exit repeat
+                        if name of mbox is "INBOX" then
+                            try
+                                set unreadMsgs to (every message of mbox whose read status is false)
+                                set cap to {limit} - totalFound
+                                if (count of unreadMsgs) < cap then set cap to (count of unreadMsgs)
+                                repeat with j from 1 to cap
+                                    set m to item j of unreadMsgs
+                                    set output to output & acctName & "\x1F" & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & "\x1F" & (flagged status of m) & linefeed
+                                    set totalFound to totalFound + 1
+                                end repeat
+                            end try
+                            exit repeat
+                        end if
+                    end repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    if not result.strip():
+        format_output(args, "No unread messages found.")
+        return
+
+    # Parse and categorize messages
+    flagged = []
+    people = []
+    notifications = []
+
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) < 6:
+            continue
+        msg = {
+            "account": parts[0],
+            "id": int(parts[1]) if parts[1].isdigit() else parts[1],
+            "subject": parts[2],
+            "sender": parts[3],
+            "date": parts[4],
+            "flagged": parts[5].lower() == "true",
+        }
+
+        if msg["flagged"]:
+            flagged.append(msg)
+        elif any(p in msg["sender"].lower() for p in noreply_patterns):
+            notifications.append(msg)
+        else:
+            people.append(msg)
+
+    total = len(flagged) + len(people) + len(notifications)
+    text = f"Inbox Processing Plan ({total} unread):"
+
+    # Suggest actions for each category
+    if flagged:
+        text += f"\n\nFLAGGED ({len(flagged)}) — High priority:"
+        for m in flagged[:5]:
+            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
+        if len(flagged) > 5:
+            text += f"\n  ... and {len(flagged) - 5} more"
+        text += f"\n\nSuggested commands:"
+        text += f"\n  my mail read <ID> -a \"{flagged[0]['account']}\""
+        text += f"\n  my mail to-todoist <ID> -a \"{flagged[0]['account']}\" --priority 4"
+
+    if people:
+        text += f"\n\nPEOPLE ({len(people)}) — Requires attention:"
+        for m in people[:5]:
+            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
+        if len(people) > 5:
+            text += f"\n  ... and {len(people) - 5} more"
+        text += f"\n\nSuggested commands:"
+        text += f"\n  my mail read <ID> -a \"{people[0]['account']}\""
+        text += f"\n  my mail mark-read <ID> -a \"{people[0]['account']}\""
+
+    if notifications:
+        text += f"\n\nNOTIFICATIONS ({len(notifications)}) — Bulk actions:"
+        for m in notifications[:5]:
+            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
+        if len(notifications) > 5:
+            text += f"\n  ... and {len(notifications) - 5} more"
+        text += f"\n\nSuggested commands:"
+        text += f"\n  my mail batch-read <ID1> <ID2> ... -a \"{notifications[0]['account']}\""
+        text += f"\n  my mail unsubscribe <ID> -a \"{notifications[0]['account']}\""
+
+    json_data = {
+        "total": total,
+        "flagged": flagged,
+        "people": people,
+        "notifications": notifications,
+    }
+    format_output(args, text, json_data=json_data)
+
+
+# ---------------------------------------------------------------------------
+# clean-newsletters — identify bulk senders + suggest cleanup
+# ---------------------------------------------------------------------------
+
+def cmd_clean_newsletters(args) -> None:
+    """Identify likely newsletter senders and suggest batch-move commands."""
+    account = resolve_account(getattr(args, "account", None))
+    mailbox = getattr(args, "mailbox", None) or DEFAULT_MAILBOX
+    limit = getattr(args, "limit", 200)
+
+    if account:
+        acct_escaped = escape(account)
+        mb_escaped = escape(mailbox)
+
+        script = f"""
+        tell application "Mail"
+            set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
+            set allMsgs to (every message of mb)
+            set msgCount to count of allMsgs
+            set cap to {limit}
+            if msgCount < cap then set cap to msgCount
+            set output to ""
+            repeat with i from 1 to cap
+                set m to item i of allMsgs
+                set output to output & (sender of m) & "\x1F" & (read status of m) & linefeed
+            end repeat
+            return output
+        end tell
+        """
+    else:
+        # Scan all enabled accounts
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set totalFound to 0
+            repeat with acct in (every account)
+                if enabled of acct then
+                    repeat with mbox in (mailboxes of acct)
+                        if name of mbox is "{DEFAULT_MAILBOX}" then
+                            try
+                                set allMsgs to (every message of mbox)
+                                set msgCount to count of allMsgs
+                                set cap to {limit}
+                                if msgCount < cap then set cap to msgCount
+                                repeat with i from 1 to cap
+                                    set m to item i of allMsgs
+                                    set output to output & (sender of m) & "\x1F" & (read status of m) & linefeed
+                                    set totalFound to totalFound + 1
+                                    if totalFound >= {limit} then exit repeat
+                                end repeat
+                            end try
+                            exit repeat
+                        end if
+                    end repeat
+                    if totalFound >= {limit} then exit repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    if not result.strip():
+        scope = f"in {mailbox} [{account}]" if account else "in INBOX across all accounts"
+        format_output(args, f"No messages found {scope}.", json_data={"newsletters": []})
+        return
+
+    # Group by sender email
+    sender_stats = defaultdict(lambda: {"total": 0, "unread": 0})
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) >= 2:
+            sender_raw = parts[0]
+            is_read = parts[1].lower() == "true"
+            email = extract_email(sender_raw)
+            sender_stats[email]["total"] += 1
+            if not is_read:
+                sender_stats[email]["unread"] += 1
+
+    # Identify likely newsletters
+    noreply_patterns = ["noreply", "no-reply", "notifications", "mailer-daemon", "donotreply", "updates@", "news@", "info@", "support@", "billing@", "newsletter", "digest"]
+
+    newsletters = []
+    for email, stats in sender_stats.items():
+        is_likely_newsletter = (
+            stats["total"] >= 3 or
+            any(pattern in email.lower() for pattern in noreply_patterns)
+        )
+        if is_likely_newsletter:
+            newsletters.append({
+                "sender": email,
+                "total_messages": stats["total"],
+                "unread_messages": stats["unread"],
+            })
+
+    # Sort by message count descending
+    newsletters.sort(key=lambda x: x["total_messages"], reverse=True)
+
+    if not newsletters:
+        format_output(args, "No newsletter senders identified.", json_data={"newsletters": []})
+        return
+
+    # Build output
+    scope = f" in {mailbox} [{account}]" if account else " across all accounts"
+    text = f"Identified {len(newsletters)} newsletter senders{scope} (from {limit} recent messages):"
+
+    for nl in newsletters:
+        text += f"\n\n  {nl['sender']}"
+        text += f"\n    Total: {nl['total_messages']} messages ({nl['unread_messages']} unread)"
+
+        # Suggest cleanup command
+        acct_flag = f"-a \"{account}\"" if account else ""
+        cleanup_cmd = f"my mail batch-move --from-sender \"{nl['sender']}\" --to-mailbox \"Newsletters\" {acct_flag}"
+        text += f"\n    Cleanup: {cleanup_cmd}"
+
+    format_output(args, text, json_data={"newsletters": newsletters})
+
+
+# ---------------------------------------------------------------------------
+# weekly-review — flagged + unreplied + attachment report
+# ---------------------------------------------------------------------------
+
+def cmd_weekly_review(args) -> None:
+    """Generate weekly review: flagged, messages with attachments, unreplied from people."""
+    account = resolve_account(getattr(args, "account", None))
+    days = getattr(args, "days", 7)
+
+    # Calculate date threshold
+    since_dt = datetime.now() - timedelta(days=days)
+    since_as = to_applescript_date(since_dt)
+
+    noreply_patterns = ["noreply", "no-reply", "notifications", "mailer-daemon", "donotreply", "updates@", "news@", "info@", "support@", "billing@"]
+
+    if account:
+        acct_escaped = escape(account)
+
+        # Category 1: Flagged messages (all, not date-filtered)
+        flagged_script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            repeat with mb in (every mailbox of acct)
+                set flaggedMsgs to (every message of mb whose flagged status is true)
+                repeat with m in flaggedMsgs
+                    set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & linefeed
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+
+        # Category 2: Messages with attachments from last N days
+        attachments_script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            repeat with mb in (every mailbox of acct)
+                set msgs to (every message of mb whose date received >= date "{since_as}")
+                set msgCount to count of msgs
+                set cap to {MAX_MESSAGES_BATCH}
+                if msgCount < cap then set cap to msgCount
+                repeat with i from 1 to cap
+                    set m to item i of msgs
+                    if (count of mail attachments of m) > 0 then
+                        set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & "\x1F" & (count of mail attachments of m) & linefeed
+                    end if
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+
+        # Category 3: Unreplied messages from people (last N days, sender NOT in noreply patterns)
+        unreplied_script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            repeat with mb in (every mailbox of acct)
+                set msgs to (every message of mb whose date received >= date "{since_as}" and was replied to is false)
+                set msgCount to count of msgs
+                set cap to {MAX_MESSAGES_BATCH}
+                if msgCount < cap then set cap to msgCount
+                repeat with i from 1 to cap
+                    set m to item i of msgs
+                    set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & linefeed
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+    else:
+        # Scan all enabled accounts
+        flagged_script = f"""
+        tell application "Mail"
+            set output to ""
+            repeat with acct in (every account)
+                if enabled of acct then
+                    repeat with mb in (every mailbox of acct)
+                        set flaggedMsgs to (every message of mb whose flagged status is true)
+                        repeat with m in flaggedMsgs
+                            set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & linefeed
+                        end repeat
+                    end repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+
+        attachments_script = f"""
+        tell application "Mail"
+            set output to ""
+            repeat with acct in (every account)
+                if enabled of acct then
+                    repeat with mb in (every mailbox of acct)
+                        set msgs to (every message of mb whose date received >= date "{since_as}")
+                        set msgCount to count of msgs
+                        set cap to {MAX_MESSAGES_BATCH}
+                        if msgCount < cap then set cap to msgCount
+                        repeat with i from 1 to cap
+                            set m to item i of msgs
+                            if (count of mail attachments of m) > 0 then
+                                set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & "\x1F" & (count of mail attachments of m) & linefeed
+                            end if
+                        end repeat
+                    end repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+
+        unreplied_script = f"""
+        tell application "Mail"
+            set output to ""
+            repeat with acct in (every account)
+                if enabled of acct then
+                    repeat with mb in (every mailbox of acct)
+                        set msgs to (every message of mb whose date received >= date "{since_as}" and was replied to is false)
+                        set msgCount to count of msgs
+                        set cap to {MAX_MESSAGES_BATCH}
+                        if msgCount < cap then set cap to msgCount
+                        repeat with i from 1 to cap
+                            set m to item i of msgs
+                            set output to output & (id of m) & "\x1F" & (subject of m) & "\x1F" & (sender of m) & "\x1F" & (date received of m) & linefeed
+                        end repeat
+                    end repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+
+    # Execute all three queries
+    flagged_result = run(flagged_script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    attachments_result = run(attachments_script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    unreplied_result = run(unreplied_script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+
+    # Parse flagged messages
+    flagged_messages = []
+    if flagged_result.strip():
+        for line in flagged_result.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split(FIELD_SEPARATOR)
+            if len(parts) >= 4:
+                flagged_messages.append({
+                    "id": int(parts[0]) if parts[0].isdigit() else parts[0],
+                    "subject": parts[1],
+                    "sender": parts[2],
+                    "date": parts[3],
+                })
+
+    # Parse messages with attachments
+    attachment_messages = []
+    if attachments_result.strip():
+        for line in attachments_result.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split(FIELD_SEPARATOR)
+            if len(parts) >= 5:
+                attachment_messages.append({
+                    "id": int(parts[0]) if parts[0].isdigit() else parts[0],
+                    "subject": parts[1],
+                    "sender": parts[2],
+                    "date": parts[3],
+                    "attachment_count": int(parts[4]) if parts[4].isdigit() else 0,
+                })
+
+    # Parse unreplied messages (filter out noreply senders)
+    unreplied_messages = []
+    if unreplied_result.strip():
+        for line in unreplied_result.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split(FIELD_SEPARATOR)
+            if len(parts) >= 4:
+                sender_email = extract_email(parts[2])
+                # Skip if sender matches noreply patterns
+                if not any(pattern in sender_email.lower() for pattern in noreply_patterns):
+                    unreplied_messages.append({
+                        "id": int(parts[0]) if parts[0].isdigit() else parts[0],
+                        "subject": parts[1],
+                        "sender": parts[2],
+                        "date": parts[3],
+                    })
+
+    # Build report
+    scope = f" for account '{account}'" if account else " across all accounts"
+    text = f"Weekly Review{scope} (last {days} days):"
+
+    # Section 1: Flagged messages
+    text += f"\n\nFlagged Messages ({len(flagged_messages)}):"
+    if flagged_messages:
+        for msg in flagged_messages[:10]:  # Show up to 10
+            text += f"\n  [{msg['id']}] {truncate(msg['subject'], 60)}"
+            text += f"\n      From: {truncate(msg['sender'], 50)}"
+        if len(flagged_messages) > 10:
+            text += f"\n  ... and {len(flagged_messages) - 10} more"
+    else:
+        text += "\n  None"
+
+    # Section 2: Messages with attachments
+    text += f"\n\nMessages with Attachments ({len(attachment_messages)}):"
+    if attachment_messages:
+        for msg in attachment_messages[:10]:
+            text += f"\n  [{msg['id']}] {truncate(msg['subject'], 60)} ({msg['attachment_count']} attachments)"
+            text += f"\n      From: {truncate(msg['sender'], 50)}"
+        if len(attachment_messages) > 10:
+            text += f"\n  ... and {len(attachment_messages) - 10} more"
+    else:
+        text += "\n  None"
+
+    # Section 3: Unreplied from people
+    text += f"\n\nUnreplied from People ({len(unreplied_messages)}):"
+    if unreplied_messages:
+        for msg in unreplied_messages[:10]:
+            text += f"\n  [{msg['id']}] {truncate(msg['subject'], 60)}"
+            text += f"\n      From: {truncate(msg['sender'], 50)}"
+        if len(unreplied_messages) > 10:
+            text += f"\n  ... and {len(unreplied_messages) - 10} more"
+    else:
+        text += "\n  None"
+
+    # Add suggested actions
+    text += "\n\nSuggested Actions:"
+    if flagged_messages:
+        text += "\n  • Review flagged messages and unflag when done: my mail unflag <id>"
+    if unreplied_messages:
+        text += "\n  • Reply to pending messages from real people"
+    if attachment_messages:
+        text += "\n  • Review and save important attachments: my mail save-attachment <id> <filename> <path>"
+    if not flagged_messages and not unreplied_messages and not attachment_messages:
+        text += "\n  • Great job! Your inbox is clean."
+
+    # Build JSON response
+    json_data = {
+        "days": days,
+        "account": account,
+        "flagged_count": len(flagged_messages),
+        "attachment_count": len(attachment_messages),
+        "unreplied_count": len(unreplied_messages),
+        "flagged_messages": flagged_messages,
+        "attachment_messages": attachment_messages,
+        "unreplied_messages": unreplied_messages,
+    }
+
+    format_output(args, text, json_data=json_data)
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+def register(subparsers) -> None:
+    # process-inbox
+    p = subparsers.add_parser("process-inbox", help="Categorize unread messages and suggest actions")
+    p.add_argument("-a", "--account", help="Limit to specific account (default: all)")
+    p.add_argument("--limit", type=int, default=50, help="Max messages to scan (default: 50)")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_process_inbox)
+
+    # clean-newsletters
+    p = subparsers.add_parser("clean-newsletters", help="Identify bulk senders and suggest cleanup")
+    p.add_argument("-a", "--account", help="Mail account name")
+    p.add_argument("-m", "--mailbox", help="Mailbox name (default: INBOX)")
+    p.add_argument("--limit", type=int, default=200, help="Number of recent messages to analyze (default: 200)")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_clean_newsletters)
+
+    # weekly-review
+    p = subparsers.add_parser("weekly-review", help="Flagged + unreplied + attachment report")
+    p.add_argument("-a", "--account", help="Filter by account name (default: all accounts)")
+    p.add_argument("--days", type=int, default=7, help="Look back N days (default: 7)")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_weekly_review)

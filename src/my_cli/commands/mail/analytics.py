@@ -1,0 +1,358 @@
+"""Mail analytics commands: stats, top-senders, digest, show-flagged."""
+
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta
+
+from my_cli.config import (
+    APPLESCRIPT_TIMEOUT_LONG,
+    DEFAULT_MAILBOX,
+    DEFAULT_MESSAGE_LIMIT,
+    DEFAULT_DIGEST_LIMIT,
+    DEFAULT_TOP_SENDERS_LIMIT,
+    FIELD_SEPARATOR,
+    MAX_MESSAGES_BATCH,
+    resolve_account,
+    validate_limit,
+)
+from my_cli.util.applescript import escape, run
+from my_cli.util.dates import to_applescript_date
+from my_cli.util.formatting import die, format_output, truncate
+from my_cli.util.mail_helpers import extract_email
+
+
+# ---------------------------------------------------------------------------
+# top-senders
+# ---------------------------------------------------------------------------
+
+def cmd_top_senders(args) -> None:
+    """Show most frequent email senders over a time period."""
+    days = getattr(args, "days", 30)
+    limit = getattr(args, "limit", DEFAULT_TOP_SENDERS_LIMIT)
+
+    since_dt = datetime.now() - timedelta(days=days)
+    since_as = to_applescript_date(since_dt)
+
+    script = f"""
+    tell application "Mail"
+        set output to ""
+        repeat with acct in (every account)
+            if enabled of acct then
+                repeat with mbox in (mailboxes of acct)
+                    if name of mbox is "INBOX" then
+                        try
+                            set msgs to (every message of mbox whose date received >= date "{since_as}")
+                            set msgCount to count of msgs
+                            set cap to {MAX_MESSAGES_BATCH}
+                            if msgCount < cap then set cap to msgCount
+                            repeat with i from 1 to cap
+                                set m to item i of msgs
+                                set output to output & (sender of m) & linefeed
+                            end repeat
+                        end try
+                        exit repeat
+                    end if
+                end repeat
+            end if
+        end repeat
+        return output
+    end tell
+    """
+
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    if not result.strip():
+        format_output(args, f"No messages found in the last {days} days.",
+                      json_data={"days": days, "senders": []})
+        return
+
+    counter = Counter(line.strip() for line in result.strip().split("\n") if line.strip())
+    top = counter.most_common(limit)
+
+    text = f"Top {limit} senders (last {days} days):"
+    for i, (sender, count) in enumerate(top, 1):
+        text += f"\n  {i}. {truncate(sender, 50)} — {count} messages"
+    format_output(args, text, json_data=[{"sender": s, "count": c} for s, c in top])
+
+
+# ---------------------------------------------------------------------------
+# digest — grouped unread summary
+# ---------------------------------------------------------------------------
+
+def cmd_digest(args) -> None:
+    """Show unread messages grouped by sender domain."""
+    script = f"""
+    tell application "Mail"
+        set output to ""
+        repeat with acct in (every account)
+            if enabled of acct then
+                repeat with mbox in (mailboxes of acct)
+                    if name of mbox is "INBOX" then
+                        try
+                            set unreadMsgs to (every message of mbox whose read status is false)
+                            set acctName to name of acct
+                            set cap to {DEFAULT_DIGEST_LIMIT}
+                            if (count of unreadMsgs) < cap then set cap to (count of unreadMsgs)
+                            repeat with j from 1 to cap
+                                set m to item j of unreadMsgs
+                                set output to output & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & linefeed
+                            end repeat
+                        end try
+                        exit repeat
+                    end if
+                end repeat
+            end if
+        end repeat
+        return output
+    end tell
+    """
+
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+    if not result.strip():
+        format_output(args, "No unread messages. Inbox zero!")
+        return
+
+    # Group by sender domain
+    groups = defaultdict(list)
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) >= 5:
+            acct, msg_id, subject, sender, date = parts[:5]
+            # Extract domain from sender
+            email = extract_email(sender)
+            if "@" in email:
+                domain = email.split("@")[1].lower()
+            else:
+                domain = "other"
+            groups[domain].append({
+                "account": acct,
+                "id": int(msg_id) if msg_id.isdigit() else msg_id,
+                "subject": subject,
+                "sender": sender,
+                "date": date,
+            })
+
+    total = sum(len(msgs) for msgs in groups.values())
+    text = f"Unread Digest ({total} messages, {len(groups)} groups):"
+    for domain, msgs in sorted(groups.items(), key=lambda x: -len(x[1])):
+        text += f"\n\n  {domain} ({len(msgs)}):"
+        for m in msgs[:5]:
+            text += f"\n    [{m['id']}] {truncate(m['subject'], 45)}"
+            text += f"\n      From: {truncate(m['sender'], 40)}"
+        if len(msgs) > 5:
+            text += f"\n    ... and {len(msgs) - 5} more"
+    format_output(args, text, json_data=dict(groups))
+
+
+# ---------------------------------------------------------------------------
+# stats
+# ---------------------------------------------------------------------------
+
+def cmd_stats(args) -> None:
+    """Show message count and unread count for a mailbox, or account-wide stats with --all."""
+    show_all = getattr(args, "all", False)
+    account = resolve_account(getattr(args, "account", None))
+    if not account:
+        die("Account required. Use -a ACCOUNT.")
+
+    if show_all:
+        # Account-wide stats across all mailboxes
+        acct_escaped = escape(account)
+
+        script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            set grandTotal to 0
+            set grandUnread to 0
+            repeat with mb in (every mailbox of acct)
+                set mbName to name of mb
+                set totalCount to count of messages of mb
+                set unreadCount to unread count of mb
+                set grandTotal to grandTotal + totalCount
+                set grandUnread to grandUnread + unreadCount
+                set output to output & mbName & "{FIELD_SEPARATOR}" & (totalCount as text) & "{FIELD_SEPARATOR}" & (unreadCount as text) & linefeed
+            end repeat
+            return (grandTotal as text) & "{FIELD_SEPARATOR}" & (grandUnread as text) & linefeed & output
+        end tell
+        """
+
+        result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+        lines = result.strip().split("\n")
+        if not lines:
+            format_output(args, f"No mailboxes found in account '{account}'.",
+                          json_data={"account": account, "mailboxes": []})
+            return
+
+        # First line has grand totals
+        totals_parts = lines[0].split(FIELD_SEPARATOR)
+        grand_total = int(totals_parts[0]) if len(totals_parts) >= 1 and totals_parts[0].isdigit() else 0
+        grand_unread = int(totals_parts[1]) if len(totals_parts) >= 2 and totals_parts[1].isdigit() else 0
+
+        # Subsequent lines are per-mailbox
+        mailboxes = []
+        for line in lines[1:]:
+            if not line.strip():
+                continue
+            parts = line.split(FIELD_SEPARATOR)
+            if len(parts) >= 3:
+                mailboxes.append({
+                    "name": parts[0],
+                    "total": int(parts[1]) if parts[1].isdigit() else 0,
+                    "unread": int(parts[2]) if parts[2].isdigit() else 0,
+                })
+
+        # Build text output
+        text = f"Account: {account}\n"
+        text += f"Total: {grand_total} messages, {grand_unread} unread\n"
+        text += f"\nMailboxes ({len(mailboxes)}):"
+        for mb in mailboxes:
+            text += f"\n  {mb['name']}: {mb['total']} messages, {mb['unread']} unread"
+
+        format_output(args, text, json_data={
+            "account": account,
+            "total_messages": grand_total,
+            "total_unread": grand_unread,
+            "mailboxes": mailboxes,
+        })
+    else:
+        # Single mailbox stats (existing behavior)
+        mailbox = getattr(args, "mailbox", None) or DEFAULT_MAILBOX
+        acct_escaped = escape(account)
+        mb_escaped = escape(mailbox)
+
+        script = f"""
+        tell application "Mail"
+            set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
+            set totalCount to count of messages of mb
+            set unreadCount to unread count of mb
+            return (totalCount as text) & "{FIELD_SEPARATOR}" & (unreadCount as text)
+        end tell
+        """
+
+        result = run(script)
+        parts = result.split(FIELD_SEPARATOR)
+        total = int(parts[0]) if len(parts) >= 1 and parts[0].isdigit() else 0
+        unread = int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else 0
+
+        format_output(args, f"{mailbox} [{account}]: {total} messages, {unread} unread",
+                      json_data={"mailbox": mailbox, "account": account, "total": total, "unread": unread})
+
+
+# ---------------------------------------------------------------------------
+# show-flagged — list all flagged messages
+# ---------------------------------------------------------------------------
+
+def cmd_show_flagged(args) -> None:
+    """List all flagged messages."""
+    account = resolve_account(getattr(args, "account", None))
+    limit = validate_limit(getattr(args, "limit", DEFAULT_MESSAGE_LIMIT))
+
+    if account:
+        # Search in specific account only
+        acct_escaped = escape(account)
+        script = f"""
+        tell application "Mail"
+            set acct to account "{acct_escaped}"
+            set output to ""
+            set totalFound to 0
+            repeat with mb in (every mailbox of acct)
+                if totalFound >= {limit} then exit repeat
+                set mbName to name of mb
+                set flaggedMsgs to (every message of mb whose flagged status is true)
+                repeat with m in flaggedMsgs
+                    if totalFound >= {limit} then exit repeat
+                    set output to output & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & "{FIELD_SEPARATOR}" & mbName & "{FIELD_SEPARATOR}" & "{acct_escaped}" & linefeed
+                    set totalFound to totalFound + 1
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+    else:
+        # Search across all accounts
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set totalFound to 0
+            repeat with acct in (every account)
+                if totalFound >= {limit} then exit repeat
+                set acctName to name of acct
+                repeat with mb in (every mailbox of acct)
+                    if totalFound >= {limit} then exit repeat
+                    set mbName to name of mb
+                    set flaggedMsgs to (every message of mb whose flagged status is true)
+                    repeat with m in flaggedMsgs
+                        if totalFound >= {limit} then exit repeat
+                        set output to output & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & "{FIELD_SEPARATOR}" & mbName & "{FIELD_SEPARATOR}" & acctName & linefeed
+                        set totalFound to totalFound + 1
+                    end repeat
+                end repeat
+            end repeat
+            return output
+        end tell
+        """
+
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+
+    if not result.strip():
+        scope = f" in account '{account}'" if account else " across all accounts"
+        format_output(args, f"No flagged messages found{scope}.",
+                      json_data={"flagged_messages": []})
+        return
+
+    # Build JSON data
+    messages = []
+    for line in result.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split(FIELD_SEPARATOR)
+        if len(parts) >= 6:
+            messages.append({
+                "id": int(parts[0]) if parts[0].isdigit() else parts[0],
+                "subject": parts[1],
+                "sender": parts[2],
+                "date": parts[3],
+                "mailbox": parts[4],
+                "account": parts[5],
+            })
+
+    # Build text output
+    scope = f" in account '{account}'" if account else " across all accounts"
+    text = f"Flagged messages{scope} (showing up to {limit}):"
+    for m in messages:
+        text += f"\n- [{m['id']}] {truncate(m['subject'], 60)}"
+        text += f"\n  From: {m['sender']}"
+        text += f"\n  Date: {m['date']}"
+        text += f"\n  Location: {m['mailbox']} [{m['account']}]"
+    format_output(args, text, json_data=messages)
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+def register(subparsers) -> None:
+    """Register analytics mail subcommands."""
+    p = subparsers.add_parser("top-senders", help="Most frequent senders")
+    p.add_argument("--days", type=int, default=30, help="Look back N days (default: 30)")
+    p.add_argument("--limit", type=int, default=10, help="Number of senders to show")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_top_senders)
+
+    p = subparsers.add_parser("digest", help="Grouped unread summary")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_digest)
+
+    p = subparsers.add_parser("stats", help="Message count and unread count for a mailbox")
+    p.add_argument("mailbox", nargs="?", default=None, help="Mailbox name (default: INBOX)")
+    p.add_argument("-a", "--account", help="Mail account name")
+    p.add_argument("--all", action="store_true", help="Show account-wide stats across all mailboxes")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_stats)
+
+    p = subparsers.add_parser("show-flagged", help="List all flagged messages")
+    p.add_argument("-a", "--account", help="Filter by account name")
+    p.add_argument("--limit", type=int, default=DEFAULT_MESSAGE_LIMIT, help="Maximum messages to show")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_show_flagged)

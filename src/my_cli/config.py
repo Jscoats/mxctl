@@ -1,0 +1,98 @@
+"""Configuration management for the `my` CLI.
+
+Three-tier account resolution (most specific wins):
+1. Explicit --account flag
+2. Default in ~/.config/my/config.json -> {"mail": {"default_account": "iCloud"}}
+3. Last-used account saved in ~/.config/my/state.json -> {"mail": {"last_account": "iCloud"}}
+
+Migration note: Backward compatibility is maintained. Config lookups check the new
+namespaced format first (e.g., config["mail"]["default_account"]), then fall back
+to the legacy flat format (config["default_account"]) if the namespace key is missing.
+This allows existing configs to continue working without modification.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+
+CONFIG_DIR = os.path.expanduser("~/.config/my")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+STATE_FILE = os.path.join(CONFIG_DIR, "state.json")
+
+DEFAULT_MESSAGE_LIMIT = 25
+MAX_MESSAGE_LIMIT = 100
+DEFAULT_BODY_LENGTH = 10000
+DEFAULT_MAILBOX = "INBOX"
+
+# Caps for various operations
+MAX_MESSAGES_BATCH = 500
+DEFAULT_DIGEST_LIMIT = 50
+DEFAULT_TOP_SENDERS_LIMIT = 10
+MAX_BATCH_READ_LIMIT = 1000
+MAX_EXPORT_BULK_LIMIT = 100
+
+# AppleScript timeout values (seconds)
+APPLESCRIPT_TIMEOUT_SHORT = 15
+APPLESCRIPT_TIMEOUT_DEFAULT = 30
+APPLESCRIPT_TIMEOUT_LONG = 60
+APPLESCRIPT_TIMEOUT_BATCH = 120
+
+# Data separators for AppleScript field/record parsing
+FIELD_SEPARATOR = "\x1F"
+RECORD_SEPARATOR = "\x1FEND\x1F"
+
+
+def _ensure_dir() -> None:
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+
+
+def _load_json(path: str) -> dict:
+    if os.path.isfile(path):
+        with open(path) as f:
+            return json.load(f)
+    return {}
+
+
+def _save_json(path: str, data: dict) -> None:
+    _ensure_dir()
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def get_config() -> dict:
+    return _load_json(CONFIG_FILE)
+
+
+def get_state() -> dict:
+    return _load_json(STATE_FILE)
+
+
+def save_last_account(account: str) -> None:
+    state = get_state()
+    if "mail" not in state:
+        state["mail"] = {}
+    state["mail"]["last_account"] = account
+    _save_json(STATE_FILE, state)
+
+
+def resolve_account(explicit: str | None) -> str | None:
+    """Resolve account using three-tier strategy. Returns None if nothing set."""
+    if explicit:
+        save_last_account(explicit)
+        return explicit
+
+    cfg = get_config()
+    # Check namespaced key first, fall back to legacy flat key
+    default_account = cfg.get("mail", {}).get("default_account") or cfg.get("default_account")
+    if default_account:
+        return default_account
+
+    state = get_state()
+    # Check namespaced key first, fall back to legacy flat key
+    return state.get("mail", {}).get("last_account") or state.get("last_account")
+
+
+def validate_limit(limit: int) -> int:
+    """Clamp limit to [1, MAX_MESSAGE_LIMIT]."""
+    return max(1, min(limit, MAX_MESSAGE_LIMIT))
