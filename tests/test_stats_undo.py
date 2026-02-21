@@ -130,3 +130,95 @@ class TestUndoLogging:
 
         captured = capsys.readouterr()
         assert "No recent batch operations to undo" in captured.out
+
+
+class TestBatchDelete:
+    """Tests for batch-delete --from-sender support."""
+
+    @patch("my_cli.commands.mail.batch.run")
+    def test_batch_delete_from_sender_dry_run(self, mock_run, mock_args, capsys):
+        """Test --from-sender dry run reports match count without deleting."""
+        mock_run.return_value = "5"  # count script returns 5
+        args = mock_args(
+            account="iCloud", mailbox=None, older_than=None,
+            from_sender="noreply@example.com", dry_run=True, force=False, limit=None, json=False,
+        )
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        cmd_batch_delete(args)
+
+        captured = capsys.readouterr()
+        assert "Dry run" in captured.out
+        assert "5" in captured.out
+        assert "noreply@example.com" in captured.out
+        # Only one run() call — the count script, no delete
+        assert mock_run.call_count == 1
+
+    @patch("my_cli.commands.mail.batch.run")
+    def test_batch_delete_from_sender_scans_all_mailboxes(self, mock_run, mock_args, capsys):
+        """Test --from-sender without -m uses all-mailboxes script."""
+        mock_run.side_effect = ["3", "3\n101\n102\n103"]  # count, then delete
+        args = mock_args(
+            account="iCloud", mailbox=None, older_than=None,
+            from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
+        )
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        cmd_batch_delete(args)
+
+        captured = capsys.readouterr()
+        assert "Deleted 3" in captured.out
+        # Delete script should iterate all mailboxes (no single mailbox "of account")
+        delete_script = mock_run.call_args_list[1][0][0]
+        assert "mailboxes of account" in delete_script
+        assert 'mailbox "' not in delete_script
+
+    @patch("my_cli.commands.mail.batch.run")
+    def test_batch_delete_from_sender_with_mailbox(self, mock_run, mock_args, capsys):
+        """Test --from-sender -m scopes to a single mailbox."""
+        mock_run.side_effect = ["2", "2\n201\n202"]
+        args = mock_args(
+            account="iCloud", mailbox="Junk", older_than=None,
+            from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
+        )
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        cmd_batch_delete(args)
+
+        captured = capsys.readouterr()
+        assert "Deleted 2" in captured.out
+        delete_script = mock_run.call_args_list[1][0][0]
+        assert 'mailbox "Junk"' in delete_script
+
+    @patch("my_cli.commands.mail.batch.run")
+    def test_batch_delete_combined_filters(self, mock_run, mock_args, capsys):
+        """Test --from-sender + --older-than builds combined where clause."""
+        mock_run.side_effect = ["1", "1\n301"]
+        args = mock_args(
+            account="iCloud", mailbox="INBOX", older_than=30,
+            from_sender="old@example.com", dry_run=False, force=True, limit=None, json=False,
+        )
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        cmd_batch_delete(args)
+
+        count_script = mock_run.call_args_list[0][0][0]
+        assert "sender contains" in count_script
+        assert "date received <" in count_script
+
+    def test_batch_delete_no_filters_raises(self, mock_args):
+        """Test that providing neither --from-sender nor --older-than exits."""
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        import sys
+        args = mock_args(
+            account="iCloud", mailbox="INBOX", older_than=None,
+            from_sender=None, dry_run=False, force=False, limit=None, json=False,
+        )
+        with pytest.raises(SystemExit):
+            cmd_batch_delete(args)
+
+    def test_batch_delete_older_than_without_mailbox_raises(self, mock_args):
+        """Test that --older-than alone without -m exits for safety."""
+        from my_cli.commands.mail.batch import cmd_batch_delete
+        args = mock_args(
+            account="iCloud", mailbox=None, older_than=30,
+            from_sender=None, dry_run=False, force=False, limit=None, json=False,
+        )
+        with pytest.raises(SystemExit):
+            cmd_batch_delete(args)

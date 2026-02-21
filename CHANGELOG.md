@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `top-senders` command — rank senders by frequency with `--limit N`, `--json`, and optional mailbox filter
-- `batch-delete --from-sender EMAIL` flag — match `batch-move` behavior for sender-based bulk deletes
+- `batch-delete --from-sender EMAIL` flag — delete by sender across all mailboxes, combinable with `--older-than` ✓
 
 ### Fixed
 
