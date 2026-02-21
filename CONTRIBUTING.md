@@ -1,4 +1,4 @@
-# Contributing to apple-mail-cli
+# Contributing to my-apple-mail-cli
 
 Thanks for your interest in contributing! 🎉
 
@@ -6,7 +6,7 @@ This project welcomes contributions from the community. Whether you're fixing a 
 
 ## 🐛 Reporting Bugs
 
-Found a bug? Please [open an issue](https://github.com/Jscoats/apple-mail-cli/issues/new?template=bug_report.md) with:
+Found a bug? Please [open an issue](https://github.com/Jscoats/my-apple-mail-cli/issues/new?template=bug_report.md) with:
 
 - Clear description of the problem
 - Steps to reproduce
@@ -18,7 +18,7 @@ Found a bug? Please [open an issue](https://github.com/Jscoats/apple-mail-cli/is
 
 ## 💡 Requesting Features
 
-Have an idea? [Open a feature request](https://github.com/Jscoats/apple-mail-cli/issues/new?template=feature_request.md) with:
+Have an idea? [Open a feature request](https://github.com/Jscoats/my-apple-mail-cli/issues/new?template=feature_request.md) with:
 
 - Clear description of the feature
 - Why it would be useful
@@ -36,8 +36,8 @@ Have an idea? [Open a feature request](https://github.com/Jscoats/apple-mail-cli
 
 ```bash
 # Clone the repo
-git clone https://github.com/Jscoats/apple-mail-cli.git
-cd apple-mail-cli
+git clone https://github.com/Jscoats/my-apple-mail-cli.git
+cd my-apple-mail-cli
 
 # Install in editable mode
 uv tool install -e .

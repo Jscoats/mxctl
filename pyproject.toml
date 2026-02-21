@@ -5,9 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "my-cli"
 version = "0.1.0"
-description = "Personal CLI toolkit — mail, calendar, tasks, and more"
+description = "A comprehensive command-line interface for Apple Mail on macOS"
 requires-python = ">=3.10"
 license = "MIT"
+authors = [{name = "Jscoats"}]
+
+[project.urls]
+Homepage = "https://github.com/Jscoats/my-apple-mail-cli"
+Issues = "https://github.com/Jscoats/my-apple-mail-cli/issues"
 
 [project.optional-dependencies]
 dev = ["pytest"]

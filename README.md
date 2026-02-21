@@ -130,6 +130,17 @@ my mail inbox --json | jq '.accounts[0].unread_count'
 my mail search "invoice" --json | jq '.[].subject'
 ```
 
+### Todoist Integration
+```bash
+# Add your Todoist API token to ~/.config/my/config.json
+{"todoist_api_token": "your-token-here"}
+
+# Then send any email as a Todoist task
+my mail to-todoist 123 --project Work
+```
+
+To get your token: [Todoist Settings → Integrations → Developer](https://todoist.com/prefs/integrations)
+
 ### Email Templates
 ```bash
 # Create a template
