@@ -6,16 +6,16 @@
 
 > A comprehensive command-line interface for Apple Mail on macOS
 
-**Never leave your terminal.** Manage your Apple Mail with 50+ powerful commands, AI-powered workflows, and modern productivity integrations.
+**Never leave your terminal.** Manage your Apple Mail with 50+ powerful commands, smart workflows, and modern productivity integrations.
 
 ## ✨ Why This Exists
 
-Use Apple Mail but wish you could control it from the terminal? This brings the full power of Mail.app to your command line — with AI-powered workflows for smart triage, summaries, and inbox automation built in.
+Use Apple Mail but wish you could control it from the terminal? This brings the full power of Mail.app to your command line — with smart triage, summaries, and inbox automation built in.
 
 ## 🚀 Key Features
 
 - **50+ Commands** - Everything from basic operations to advanced batch processing
-- **AI-Powered Workflows** - Smart inbox triage, intelligent summaries, context-aware search
+- **Smart Workflows** - Inbox triage, intelligent summaries, context-aware search
 - **Batch Operations with Undo** - Process hundreds of emails safely with rollback support
 - **Productivity Integrations** - Send emails to Todoist, use templates, automate workflows
 - **Zero Dependencies** - Pure Python stdlib, no external packages required
@@ -37,7 +37,7 @@ uv tool install git+https://github.com/Jscoats/my-apple-mail-cli
 # See what's in your inbox
 my mail inbox
 
-# AI-powered summary of unread emails (concise, one-liner per email)
+# Smart summary of unread emails (concise, one-liner per email)
 my mail summary
 
 # Triage unread emails by urgency
@@ -77,7 +77,7 @@ my mail to-todoist 123 --project Work
 - `unsubscribe` - Unsubscribe from mailing lists via List-Unsubscribe header (supports one-click RFC 8058)
 - `attachments`, `save-attachment` - Handle attachments
 
-### AI-Powered Features
+### Smart Features
 - `summary` - Ultra-concise summaries optimized for AI assistants
 - `triage` - Smart categorization by urgency (flagged → people → notifications)
 - `context` - Thread messages with parent/child relationships
