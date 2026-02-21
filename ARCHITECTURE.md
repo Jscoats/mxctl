@@ -23,7 +23,7 @@ src/my_cli/
 │   ├── mail_helpers.py           # resolve_message_context(), normalize_subject()
 │   └── dates.py                  # parse_date(), to_applescript_date()
 └── commands/
-    └── mail/                      # All mail subcommands (14 modules)
+    └── mail/                      # All mail subcommands (15 modules)
         ├── __init__.py            # Auto-wires all registered command modules
         ├── accounts.py            # inbox, accounts, mailboxes
         ├── messages.py            # list, read, search
@@ -33,6 +33,7 @@ src/my_cli/
         ├── manage.py              # create-mailbox, delete-mailbox, empty-trash
         ├── batch.py               # batch-read, batch-flag, batch-move, batch-delete
         ├── analytics.py           # stats, top-senders, digest, show-flagged
+        ├── setup.py               # init (first-time setup wizard)
         ├── system.py              # check, headers, rules, junk, not-junk
         ├── composite.py           # export, thread, reply, forward
         ├── ai.py                  # summary, triage, context, find-related

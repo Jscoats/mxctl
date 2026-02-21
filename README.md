@@ -12,7 +12,7 @@ Use Apple Mail but want to automate it? This CLI gives you full control of Mail.
 
 ## 🚀 Key Features
 
-- **50+ Commands** - Everything from basic operations to advanced batch processing
+- **49 Commands** - Everything from basic operations to advanced batch processing
 - **Built for AI Workflows** - Every command supports `--json` output designed for AI assistants to read and act on
 - **Batch Operations with Undo** - Process hundreds of emails safely with rollback support
 - **Productivity Integrations** - Todoist, templates, scripting, status bar integration
@@ -62,6 +62,9 @@ my mail to-todoist 123 --project Work
 
 ## 📚 Command Categories
 
+### Setup
+- `init` - First-time setup wizard (auto-detects Mail accounts, configures default account and optional Todoist token)
+
 ### Account & Mailbox Management
 - `inbox` - Overview of all accounts with unread counts
 - `accounts` - List all mail accounts
@@ -76,6 +79,7 @@ my mail to-todoist 123 --project Work
 - `search` - Find messages by subject/sender
 - `mark-read`, `mark-unread`, `flag`, `unflag` - Message actions
 - `move`, `delete` - Organize messages
+- `junk`, `not-junk` - Mark as spam / restore from spam (moves to INBOX)
 - `open` - Open message in Mail.app GUI
 - `unsubscribe` - Unsubscribe from mailing lists via List-Unsubscribe header (supports one-click RFC 8058)
 - `attachments`, `save-attachment` - Handle attachments
@@ -101,6 +105,11 @@ my mail to-todoist 123 --project Work
 - `show-flagged` - List flagged messages
 - `weekly-review` - Past 7 days summary
 - `clean-newsletters` - Archive/delete newsletter subscriptions
+
+### System
+- `check` - Trigger Mail.app to fetch new mail
+- `headers` - Full email header analysis (SPF, DKIM, DMARC, hop count, return path)
+- `rules` - List, enable, or disable mail rules
 
 ### Compose & Templates
 - `draft` - Create email draft (supports templates)

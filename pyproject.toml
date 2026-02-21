@@ -13,6 +13,7 @@ authors = [{name = "Jscoats"}]
 
 [project.urls]
 Homepage = "https://github.com/Jscoats/my-apple-mail-cli"
+Repository = "https://github.com/Jscoats/my-apple-mail-cli"
 Issues = "https://github.com/Jscoats/my-apple-mail-cli/issues"
 
 [project.optional-dependencies]
