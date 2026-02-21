@@ -10,7 +10,7 @@
 
 ## ✨ Why This Exists
 
-Love Apple Mail but wish you could control it from the terminal? You're not alone. This is the **only comprehensive CLI for Apple Mail** — no comparable tool exists with this breadth of features.
+Use Apple Mail but wish you could control it from the terminal? This brings the full power of Mail.app to your command line — with AI-powered workflows for smart triage, summaries, and inbox automation built in.
 
 ## 🚀 Key Features
 
