@@ -294,6 +294,37 @@ def cmd_not_junk(args) -> None:
     )
 
 
+def cmd_open(args) -> None:
+    """Open a message in Mail.app."""
+    account, mailbox, acct_escaped, mb_escaped = resolve_message_context(args)
+    message_id = args.id
+
+    script = f"""
+    tell application "Mail"
+        set theMb to mailbox "{mb_escaped}" of account "{acct_escaped}"
+        set theMsg to (first message of theMb whose id is {message_id})
+        set msgSubject to subject of theMsg
+        set selected mailboxes of first message viewer to {{theMb}}
+        set selected messages of first message viewer to {{theMsg}}
+        activate
+        return msgSubject
+    end tell
+    """
+
+    subject = run(script)
+    format_output(
+        args,
+        f"Opened message {message_id} in Mail.app",
+        json_data={
+            "opened": True,
+            "message_id": message_id,
+            "account": account,
+            "mailbox": mailbox,
+            "subject": subject,
+        },
+    )
+
+
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
@@ -373,3 +404,11 @@ def register(subparsers) -> None:
     p.add_argument("-a", "--account", help="Mail account name")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_not_junk)
+
+    # open
+    p = subparsers.add_parser("open", help="Open message in Mail.app")
+    p.add_argument("id", type=int, help="Message ID")
+    p.add_argument("-a", "--account", help="Mail account name")
+    p.add_argument("-m", "--mailbox", help="Mailbox name (default: INBOX)")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_open)

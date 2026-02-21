@@ -241,6 +241,52 @@ def cmd_mailboxes(args) -> None:
 
 
 # ---------------------------------------------------------------------------
+# count
+# ---------------------------------------------------------------------------
+
+def cmd_count(args) -> None:
+    """Print unread message count."""
+    account = resolve_account(getattr(args, "account", None))
+    mailbox = getattr(args, "mailbox", None)
+
+    if account:
+        acct_escaped = escape(account)
+        mb = mailbox or "INBOX"
+        mb_escaped = escape(mb)
+        script = f'''
+        tell application "Mail"
+            set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
+            return unread count of mb
+        end tell
+        '''
+        result = run(script)
+        count = int(result.strip()) if result.strip().isdigit() else 0
+        format_output(args, str(count),
+                      json_data={"unread": count, "account": account, "mailbox": mb})
+    else:
+        script = '''
+        tell application "Mail"
+            set totalUnread to 0
+            repeat with acct in (every account)
+                if enabled of acct then
+                    repeat with mbox in (mailboxes of acct)
+                        if name of mbox is "INBOX" then
+                            set totalUnread to totalUnread + (unread count of mbox)
+                            exit repeat
+                        end if
+                    end repeat
+                end if
+            end repeat
+            return totalUnread
+        end tell
+        '''
+        result = run(script)
+        count = int(result.strip()) if result.strip().isdigit() else 0
+        format_output(args, str(count),
+                      json_data={"unread": count, "account": "all"})
+
+
+# ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
@@ -261,3 +307,10 @@ def register(subparsers) -> None:
     p.add_argument("-a", "--account", help="Filter to a specific account")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_mailboxes)
+
+    # count
+    p = subparsers.add_parser("count", help="Unread message count (for scripting)")
+    p.add_argument("-a", "--account", help="Specific account")
+    p.add_argument("-m", "--mailbox", help="Specific mailbox (default: INBOX)")
+    p.add_argument("--json", action="store_true", help="Output as JSON")
+    p.set_defaults(func=cmd_count)

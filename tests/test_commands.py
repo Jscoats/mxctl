@@ -428,3 +428,37 @@ def test_cmd_show_flagged_json(monkeypatch, mock_args, capsys):
     captured = capsys.readouterr()
     assert '"id": 123' in captured.out
     assert '"mailbox": "INBOX"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_open (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_open_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_open opens message in Mail.app."""
+    from my_cli.commands.mail.actions import cmd_open
+
+    mock_run = Mock(return_value="Test Subject")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=12345)
+    cmd_open(args)
+
+    captured = capsys.readouterr()
+    assert "Opened message 12345 in Mail.app" in captured.out
+
+
+def test_cmd_open_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_open --json returns JSON."""
+    from my_cli.commands.mail.actions import cmd_open
+
+    mock_run = Mock(return_value="Test Subject")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=12345, json=True)
+    cmd_open(args)
+
+    captured = capsys.readouterr()
+    assert '"opened": true' in captured.out
+    assert '"message_id": 12345' in captured.out
+    assert '"subject": "Test Subject"' in captured.out

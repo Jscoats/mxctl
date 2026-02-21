@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- `init` — Setup wizard for first-time configuration (auto-detects accounts, optional Todoist token)
+- `count` — Unread message count for scripting and status bars
+- `open` — Open a message in the Mail.app GUI for handling rich content
+
 ## [0.1.0] - 2026-02-21
 
 ### Added

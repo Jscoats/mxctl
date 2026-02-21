@@ -15,6 +15,7 @@ from my_cli.commands.mail.todoist_integration import register as register_todois
 from my_cli.commands.mail.inbox_tools import register as register_inbox_tools
 from my_cli.commands.mail.templates import register as register_templates
 from my_cli.commands.mail.undo import register as register_undo
+from my_cli.commands.mail.setup import register as register_setup
 
 
 def register_mail_subcommand(parent_subparsers) -> None:
@@ -37,6 +38,7 @@ def register_mail_subcommand(parent_subparsers) -> None:
     register_inbox_tools(mail_sub)
     register_templates(mail_sub)
     register_undo(mail_sub)
+    register_setup(mail_sub)
 
     # If `my mail` is run with no subcommand, show help
     mail_parser.set_defaults(func=lambda _: mail_parser.print_help())

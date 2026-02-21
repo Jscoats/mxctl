@@ -32,6 +32,9 @@ uv tool install git+https://github.com/Jscoats/my-apple-mail-cli
 ## 🎯 Quick Start
 
 ```bash
+# First time? Set up your default account
+my mail init
+
 # See what's in your inbox
 my mail inbox
 
@@ -64,6 +67,7 @@ my mail to-todoist 123 --project Work
 - `accounts` - List all mail accounts
 - `mailboxes` - List mailboxes in an account
 - `create-mailbox`, `delete-mailbox` - Manage folders
+- `count` - Unread message count (for scripting and status bars)
 - `empty-trash` - Empty trash with confirmation dialog
 
 ### Message Operations
@@ -72,6 +76,7 @@ my mail to-todoist 123 --project Work
 - `search` - Find messages by subject/sender
 - `mark-read`, `mark-unread`, `flag`, `unflag` - Message actions
 - `move`, `delete` - Organize messages
+- `open` - Open message in Mail.app GUI
 - `unsubscribe` - Unsubscribe from mailing lists via List-Unsubscribe header (supports one-click RFC 8058)
 - `attachments`, `save-attachment` - Handle attachments
 
