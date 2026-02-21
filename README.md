@@ -177,7 +177,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-Built because no comprehensive Apple Mail CLI existed. Inspired by the need to automate email workflows without leaving the terminal.
+Built to automate email workflows without leaving the terminal.
 
 ## 📮 Contact
 
