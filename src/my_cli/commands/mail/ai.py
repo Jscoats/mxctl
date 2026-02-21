@@ -247,6 +247,30 @@ def cmd_context(args) -> None:
 def cmd_find_related(args) -> None:
     """Search for messages and group results by conversation."""
     query = args.query
+
+    # If query is a numeric message ID, look up the message first
+    if query.isdigit():
+        message_id = int(query)
+        lookup_script = f"""
+        tell application "Mail"
+            repeat with acct in (every account)
+                repeat with mbox in (mailboxes of acct)
+                    try
+                        set theMsg to first message of mbox whose id is {message_id}
+                        return (subject of theMsg) & "\x1F" & (sender of theMsg)
+                    end try
+                end repeat
+            end repeat
+            return ""
+        end tell
+        """
+        lookup_result = run(lookup_script, timeout=APPLESCRIPT_TIMEOUT_LONG)
+        if not lookup_result.strip():
+            format_output(args, f"Message {message_id} not found.")
+            return
+        parts = lookup_result.strip().split(FIELD_SEPARATOR)
+        query = normalize_subject(parts[0])
+
     query_escaped = escape(query)
 
     script = f"""

@@ -11,7 +11,7 @@ from my_cli.util.formatting import truncate, format_output
 
 def cmd_inbox(args) -> None:
     """List unread counts and recent messages across all accounts."""
-    script = """
+    script = f"""
     tell application "Mail"
         set output to ""
         set acctList to every account
@@ -113,7 +113,7 @@ def cmd_inbox(args) -> None:
 
 def cmd_accounts(args) -> None:
     """List configured mail accounts."""
-    script = """
+    script = f"""
     tell application "Mail"
         set output to ""
         repeat with acct in (every account)
