@@ -60,6 +60,28 @@ def test_cmd_inbox_empty(monkeypatch, mock_args, capsys):
     assert "No mail accounts found" in captured.out
 
 
+def test_cmd_inbox_account_filter(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_inbox -a filters to a single account."""
+    from my_cli.commands.mail.accounts import cmd_inbox
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}1{FIELD_SEPARATOR}8\n"
+        f"MSG{FIELD_SEPARATOR}iCloud{FIELD_SEPARATOR}200{FIELD_SEPARATOR}Filtered Subject{FIELD_SEPARATOR}x@x.com{FIELD_SEPARATOR}Mon\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args(account="iCloud")
+    cmd_inbox(args)
+
+    captured = capsys.readouterr()
+    assert "iCloud:" in captured.out
+    assert "Unread: 1" in captured.out
+    # Verify the script sent to run() scopes to a single account
+    script_sent = mock_run.call_args[0][0]
+    assert 'account "iCloud"' in script_sent
+    assert "every account" not in script_sent
+
+
 # ---------------------------------------------------------------------------
 # cmd_list (messages.py)
 # ---------------------------------------------------------------------------
@@ -387,6 +409,24 @@ def test_cmd_triage_json(monkeypatch, mock_args, capsys):
     assert '"flagged":' in captured.out
     assert '"people":' in captured.out
     assert '"notifications":' in captured.out
+
+
+def test_cmd_triage_account_filter(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_triage -a scopes to a single account."""
+    from my_cli.commands.mail.ai import cmd_triage
+
+    mock_run = Mock(return_value=f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}friend@ex.com{FIELD_SEPARATOR}Mon{FIELD_SEPARATOR}false\n")
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(account="iCloud")
+    cmd_triage(args)
+
+    captured = capsys.readouterr()
+    assert "Triage" in captured.out
+    # Verify the script sent to run() scopes to a single account
+    script_sent = mock_run.call_args[0][0]
+    assert 'account "iCloud"' in script_sent
+    assert "every account" not in script_sent
 
 
 # ---------------------------------------------------------------------------

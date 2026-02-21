@@ -13,14 +13,15 @@ Use FIELD_SEPARATOR from config.py in the templates.
 from my_cli.config import FIELD_SEPARATOR
 
 
-def inbox_iterator_all_accounts(inner_operations: str, cap: int = 20) -> str:
-    """Generate AppleScript to iterate over INBOX in all enabled accounts.
+def inbox_iterator_all_accounts(inner_operations: str, cap: int = 20, account: str | None = None) -> str:
+    """Generate AppleScript to iterate over INBOX in all enabled accounts (or one).
 
     Args:
         inner_operations: AppleScript code to execute for each INBOX message.
                          Available variables: m (message), acct (account),
                          acctName (account name), mbox (INBOX mailbox)
         cap: Maximum number of messages per inbox
+        account: If provided, scope iteration to this single account name
 
     Returns:
         Complete AppleScript string
@@ -30,31 +31,42 @@ def inbox_iterator_all_accounts(inner_operations: str, cap: int = 20) -> str:
             set output to output & acctName & "\\x1F" & (id of m) & "\\x1F" & (subject of m) & linefeed
         '''
         script = inbox_iterator_all_accounts(inner_ops, cap=30)
+        script = inbox_iterator_all_accounts(inner_ops, cap=30, account="iCloud")
     """
+    if account:
+        from my_cli.util.applescript import escape
+        acct_escaped = escape(account)
+        outer_open = f'set acct to account "{acct_escaped}"\n        set acctName to name of acct'
+        outer_close = ""
+    else:
+        outer_open = (
+            "repeat with acct in (every account)\n"
+            "            if enabled of acct then\n"
+            "                set acctName to name of acct"
+        )
+        outer_close = "            end if\n        end repeat"
+
     return f"""
     tell application "Mail"
         set output to ""
         set totalFound to 0
-        repeat with acct in (every account)
-            if enabled of acct then
-                set acctName to name of acct
-                repeat with mbox in (mailboxes of acct)
-                    if name of mbox is "INBOX" then
-                        try
-                            set unreadMsgs to (every message of mbox whose read status is false)
-                            set cap to {cap}
-                            if (count of unreadMsgs) < cap then set cap to (count of unreadMsgs)
-                            repeat with j from 1 to cap
-                                set m to item j of unreadMsgs
-                                {inner_operations}
-                                set totalFound to totalFound + 1
-                            end repeat
-                        end try
-                        exit repeat
-                    end if
-                end repeat
-            end if
-        end repeat
+        {outer_open}
+            repeat with mbox in (mailboxes of acct)
+                if name of mbox is "INBOX" then
+                    try
+                        set unreadMsgs to (every message of mbox whose read status is false)
+                        set cap to {cap}
+                        if (count of unreadMsgs) < cap then set cap to (count of unreadMsgs)
+                        repeat with j from 1 to cap
+                            set m to item j of unreadMsgs
+                            {inner_operations}
+                            set totalFound to totalFound + 1
+                        end repeat
+                    end try
+                    exit repeat
+                end if
+            end repeat
+        {outer_close}
         return output
     end tell
     """

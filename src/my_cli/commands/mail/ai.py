@@ -61,8 +61,9 @@ def cmd_summary(args) -> None:
 
 def cmd_triage(args) -> None:
     """Group unread messages by urgency and category."""
+    account = resolve_account(getattr(args, "account", None))
     inner_ops = f'set output to output & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & "{FIELD_SEPARATOR}" & (flagged status of m) & linefeed'
-    script = inbox_iterator_all_accounts(inner_ops, cap=30)
+    script = inbox_iterator_all_accounts(inner_ops, cap=30, account=account)
 
     result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
     if not result.strip():
@@ -341,6 +342,7 @@ def register(subparsers) -> None:
     p.set_defaults(func=cmd_summary)
 
     p = subparsers.add_parser("triage", help="Unread grouped by urgency/category")
+    p.add_argument("-a", "--account", help="Filter to a specific account")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_triage)
 

@@ -10,40 +10,72 @@ from my_cli.util.formatting import truncate, format_output
 # ---------------------------------------------------------------------------
 
 def cmd_inbox(args) -> None:
-    """List unread counts and recent messages across all accounts."""
-    script = f"""
-    tell application "Mail"
-        set output to ""
-        set acctList to every account
-        repeat with i from 1 to (count of acctList)
-            set acct to item i of acctList
+    """List unread counts and recent messages, optionally scoped to one account."""
+    account = resolve_account(getattr(args, "account", None))
+
+    if account:
+        acct_escaped = escape(account)
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set acct to account "{acct_escaped}"
             set acctName to name of acct
-            set acctEnabled to enabled of acct
-            if acctEnabled then
-                repeat with mbox in (mailboxes of acct)
-                    if name of mbox is "INBOX" then
-                        try
-                            set unreadCount to unread count of mbox
-                            set totalCount to count of messages of mbox
-                            set output to output & acctName & "{FIELD_SEPARATOR}" & unreadCount & "{FIELD_SEPARATOR}" & totalCount & linefeed
-                            if unreadCount > 0 then
-                                set unreadMsgs to (every message of mbox whose read status is false)
-                                set previewCount to 3
-                                if (count of unreadMsgs) < previewCount then set previewCount to count of unreadMsgs
-                                repeat with j from 1 to previewCount
-                                    set m to item j of unreadMsgs
-                                    set output to output & "MSG\x1F" & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & linefeed
-                                end repeat
-                            end if
-                        end try
-                        exit repeat
-                    end if
-                end repeat
-            end if
-        end repeat
-        return output
-    end tell
-    """
+            repeat with mbox in (mailboxes of acct)
+                if name of mbox is "INBOX" then
+                    try
+                        set unreadCount to unread count of mbox
+                        set totalCount to count of messages of mbox
+                        set output to output & acctName & "{FIELD_SEPARATOR}" & unreadCount & "{FIELD_SEPARATOR}" & totalCount & linefeed
+                        if unreadCount > 0 then
+                            set unreadMsgs to (every message of mbox whose read status is false)
+                            set previewCount to 3
+                            if (count of unreadMsgs) < previewCount then set previewCount to count of unreadMsgs
+                            repeat with j from 1 to previewCount
+                                set m to item j of unreadMsgs
+                                set output to output & "MSG\x1F" & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & linefeed
+                            end repeat
+                        end if
+                    end try
+                    exit repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
+    else:
+        script = f"""
+        tell application "Mail"
+            set output to ""
+            set acctList to every account
+            repeat with i from 1 to (count of acctList)
+                set acct to item i of acctList
+                set acctName to name of acct
+                set acctEnabled to enabled of acct
+                if acctEnabled then
+                    repeat with mbox in (mailboxes of acct)
+                        if name of mbox is "INBOX" then
+                            try
+                                set unreadCount to unread count of mbox
+                                set totalCount to count of messages of mbox
+                                set output to output & acctName & "{FIELD_SEPARATOR}" & unreadCount & "{FIELD_SEPARATOR}" & totalCount & linefeed
+                                if unreadCount > 0 then
+                                    set unreadMsgs to (every message of mbox whose read status is false)
+                                    set previewCount to 3
+                                    if (count of unreadMsgs) < previewCount then set previewCount to count of unreadMsgs
+                                    repeat with j from 1 to previewCount
+                                        set m to item j of unreadMsgs
+                                        set output to output & "MSG\x1F" & acctName & "{FIELD_SEPARATOR}" & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & linefeed
+                                    end repeat
+                                end if
+                            end try
+                            exit repeat
+                        end if
+                    end repeat
+                end if
+            end repeat
+            return output
+        end tell
+        """
 
     result = run(script)
 
@@ -294,6 +326,7 @@ def register(subparsers) -> None:
     """Register account-related mail subcommands."""
     # inbox
     p = subparsers.add_parser("inbox", help="Unread counts + recent messages across all accounts")
+    p.add_argument("-a", "--account", help="Filter to a specific account")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_inbox)
 

@@ -6,7 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- `top-senders` command — rank senders by frequency with `--limit N`, `--json`, and optional mailbox filter
+- `batch-delete --from-sender EMAIL` flag — match `batch-move` behavior for sender-based bulk deletes
+
+### Fixed
+
+- `inbox` now accepts `-a` / `--account` to scope results to a single account ✓
+- `triage` now accepts `-a` / `--account` to filter unread to a single account ✓
+- `accounts --json` returning empty `[]` instead of account data
+- Raw AppleScript error messages now wrapped in user-friendly output
 
 ## [0.1.0] - 2026-02-21
 
@@ -23,5 +33,5 @@ No unreleased changes.
 - **System tools** — `check`, `headers`, `rules`, `junk`, `not-junk`
 - Multi-account support with three-tier account resolution
 - `--json` output mode on every command
-- Comprehensive test suite (164 tests)
+- Comprehensive test suite (166 tests)
 - Zero runtime dependencies (Python stdlib only)
