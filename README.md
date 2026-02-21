@@ -8,7 +8,7 @@
 
 ## ✨ Why This Exists
 
-Use Apple Mail but want to automate it? This CLI gives you full control of Mail.app from the terminal. Every command outputs structured data that works with AI assistants, shell scripts, or status bars — so you can triage your inbox with Claude, pipe unread counts to your tmux bar, or batch-process newsletters without opening Mail.app.
+Use Apple Mail but want to automate it? This CLI gives you full control of Mail.app from the terminal. Every command outputs structured data that works with AI assistants, shell scripts, or status bars — so you can triage your inbox with Claude, automate workflows with scripts, or batch-process newsletters without opening Mail.app.
 
 ## 🚀 Key Features
 
