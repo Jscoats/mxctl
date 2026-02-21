@@ -205,7 +205,6 @@ class TestBatchDelete:
     def test_batch_delete_no_filters_raises(self, mock_args):
         """Test that providing neither --from-sender nor --older-than exits."""
         from my_cli.commands.mail.batch import cmd_batch_delete
-        import sys
         args = mock_args(
             account="iCloud", mailbox="INBOX", older_than=None,
             from_sender=None, dry_run=False, force=False, limit=None, json=False,
