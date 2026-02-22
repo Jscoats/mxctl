@@ -259,7 +259,7 @@ end tell
                     gmail_accounts.append(enabled_accounts[int(part) - 1]["name"])
 
     if gmail_accounts:
-        print(f"  Mailbox names like 'Spam', 'Trash', 'Sent' will auto-map to [Gmail]/... equivalents.")
+        print("  Mailbox names like 'Spam', 'Trash', 'Sent' will auto-map to [Gmail]/... equivalents.")
 
     # --- Todoist API token ---
     todoist_token = ""
