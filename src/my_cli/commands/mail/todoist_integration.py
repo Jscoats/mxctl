@@ -44,7 +44,7 @@ def cmd_to_todoist(args) -> None:
     script = f"""
     tell application "Mail"
         set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
-        set theMsg to first message of mb whose id is {message_id}
+        set theMsg to message id {message_id} of mb
         set msgSubject to subject of theMsg
         set msgSender to sender of theMsg
         set msgDate to date received of theMsg
