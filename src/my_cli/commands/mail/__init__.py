@@ -1,5 +1,8 @@
 """Mail command registration — wires all mail subcommands into argparse."""
 
+import argparse
+
+from my_cli import __version__
 from my_cli.commands.mail.accounts import register as register_accounts
 from my_cli.commands.mail.messages import register as register_messages
 from my_cli.commands.mail.actions import register as register_actions
@@ -17,10 +20,37 @@ from my_cli.commands.mail.templates import register as register_templates
 from my_cli.commands.mail.undo import register as register_undo
 from my_cli.commands.mail.setup import register as register_setup
 
+_GROUPED_HELP = """\
+Commands by category:
+
+  Setup:        init, check, accounts, mailboxes
+  Reading:      inbox, list, read, search, thread, context, headers
+  Actions:      mark-read, mark-unread, flag, unflag, move, delete
+                junk, not-junk, unsubscribe, rules, empty-trash
+  Compose:      draft, reply, forward, templates
+  Batch:        batch-read, batch-flag, batch-move, batch-delete, undo
+  AI & Analytics: summary, triage, find-related, digest, top-senders,
+                show-flagged, weekly-review, process-inbox,
+                clean-newsletters, stats
+  Export:       export, attachments, save-attachment, to-todoist
+
+Run `my mail <command> --help` for details on any command.
+"""
+
 
 def register_mail_subcommand(parent_subparsers) -> None:
     """Register mail subcommands into the argparse tree."""
-    mail_parser = parent_subparsers.add_parser("mail", help="Apple Mail operations")
+    mail_parser = parent_subparsers.add_parser(
+        "mail",
+        help="Apple Mail operations",
+        description=_GROUPED_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    mail_parser.add_argument(
+        "--version",
+        action="version",
+        version=f"my-apple-mail-cli {__version__}",
+    )
     mail_sub = mail_parser.add_subparsers(dest="mail_command")
 
     register_accounts(mail_sub)

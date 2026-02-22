@@ -3,6 +3,7 @@
 import argparse
 import sys
 
+from my_cli import __version__
 from my_cli.commands.mail import register_mail_subcommand
 
 
@@ -10,6 +11,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         prog="my",
         description="Personal CLI toolkit",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"my-apple-mail-cli {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command")
 

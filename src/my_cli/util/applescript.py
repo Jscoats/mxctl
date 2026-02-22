@@ -6,7 +6,47 @@ import os
 import subprocess
 import sys
 
-from my_cli.config import APPLESCRIPT_TIMEOUT_DEFAULT
+from my_cli.config import APPLESCRIPT_TIMEOUT_DEFAULT, STATE_FILE
+
+_automation_warned: bool = False
+
+
+def _warn_automation_once() -> None:
+    """Print a one-time heads-up about macOS Automation permission if needed."""
+    global _automation_warned
+    if _automation_warned:
+        return
+
+    # Check if we've already shown the prompt in a previous session
+    from my_cli.config import get_state, _save_json
+
+    state = get_state()
+    if state.get("automation_prompted"):
+        _automation_warned = True
+        return
+
+    # Check terminal app name for a friendlier message
+    terminal_app = os.environ.get("TERM_PROGRAM", "your terminal app")
+    if terminal_app == "iTerm.app":
+        terminal_app = "iTerm"
+    elif terminal_app == "Apple_Terminal":
+        terminal_app = "Terminal"
+
+    print(
+        "Note: macOS will ask for Automation permission to control Mail.app. "
+        "If prompted, click Allow.",
+        file=sys.stderr,
+    )
+    print(
+        f"  If you see 'not authorized': System Settings → Privacy & Security → "
+        f"Automation → {terminal_app} → enable Mail.",
+        file=sys.stderr,
+    )
+
+    # Mark as warned for this session and persist to state
+    _automation_warned = True
+    state["automation_prompted"] = True
+    _save_json(STATE_FILE, state)
 
 
 def validate_msg_id(value) -> int:
@@ -48,6 +88,7 @@ def sanitize_path(path: str) -> str:
 
 def run(script: str, timeout: int = APPLESCRIPT_TIMEOUT_DEFAULT) -> str:
     """Execute AppleScript and return stdout. Exits on error."""
+    _warn_automation_once()
     try:
         result = subprocess.run(
             ["osascript", "-e", script],

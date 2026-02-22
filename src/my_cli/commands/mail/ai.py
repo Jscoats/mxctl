@@ -15,7 +15,7 @@ from my_cli.config import (
 from my_cli.util.applescript import escape, run, validate_msg_id
 from my_cli.util.applescript_templates import inbox_iterator_all_accounts
 from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import extract_email, normalize_subject, parse_message_line
+from my_cli.util.mail_helpers import extract_display_name, extract_email, normalize_subject, parse_message_line
 
 
 # ---------------------------------------------------------------------------
@@ -43,10 +43,7 @@ def cmd_summary(args) -> None:
     # Ultra-concise format for AI consumption
     text = f"{len(messages)} unread:"
     for m in messages:
-        # Extract just the name from sender
-        sender = m["sender"]
-        if "<" in sender:
-            sender = sender.split("<")[0].strip().strip('"')
+        sender = extract_display_name(m["sender"])
         text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 55)}"
     format_output(args, text, json_data=messages)
 
@@ -91,19 +88,19 @@ def cmd_triage(args) -> None:
     if flagged:
         text += f"\n\nFLAGGED ({len(flagged)}):"
         for m in flagged:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
 
     if people:
         text += f"\n\nPEOPLE ({len(people)}):"
         for m in people:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
 
     if notifications:
         text += f"\n\nNOTIFICATIONS ({len(notifications)}):"
         for m in notifications:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
 
     format_output(args, text, json_data={"flagged": flagged, "people": people, "notifications": notifications})
@@ -303,7 +300,7 @@ def cmd_find_related(args) -> None:
     for thread_subject, msgs in sorted(threads.items(), key=lambda x: -len(x[1])):
         text += f"\n\n  {thread_subject} ({len(msgs)} messages):"
         for m in msgs[:5]:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n    [{m['id']}] {truncate(sender, 20)} — {m['date']}"
         if len(msgs) > 5:
             text += f"\n    ... and {len(msgs) - 5} more"

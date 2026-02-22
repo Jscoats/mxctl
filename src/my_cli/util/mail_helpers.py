@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import re
 from argparse import Namespace
 from email.utils import parseaddr
 
-from my_cli.config import DEFAULT_MAILBOX, get_gmail_accounts, resolve_account
+from my_cli.config import CONFIG_FILE, DEFAULT_MAILBOX, get_gmail_accounts, resolve_account
 from my_cli.util.applescript import escape
 from my_cli.util.formatting import die
 
@@ -55,7 +56,10 @@ def resolve_message_context(args: Namespace) -> tuple[str, str, str, str]:
     """
     account = resolve_account(getattr(args, "account", None))
     if not account:
-        die("Account required. Use -a ACCOUNT.")
+        if not os.path.isfile(CONFIG_FILE):
+            die("No account configured. Run `my mail init` to get started.")
+        else:
+            die("No default account set. Run `my mail init` to configure one, or use -a ACCOUNT.")
     mailbox = getattr(args, "mailbox", None) or DEFAULT_MAILBOX
     mailbox = resolve_mailbox(account, mailbox)
 
@@ -98,6 +102,19 @@ def extract_email(sender_str: str) -> str:
     """
     _, email = parseaddr(sender_str)
     return email if email else sender_str
+
+
+def extract_display_name(sender: str) -> str:
+    """Extract the display name from a sender string.
+
+    Examples:
+        '"John Doe" <john@example.com>' -> 'John Doe'
+        'John Doe <john@example.com>'   -> 'John Doe'
+        'jane@example.com'              -> 'jane@example.com'
+    """
+    if "<" in sender:
+        return sender.split("<")[0].strip().strip('"')
+    return sender
 
 
 def parse_message_line(

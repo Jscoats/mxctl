@@ -16,7 +16,7 @@ from my_cli.util.applescript import escape, run
 from my_cli.util.applescript_templates import mailbox_iterator
 from my_cli.util.dates import to_applescript_date
 from my_cli.util.formatting import format_output, truncate
-from my_cli.util.mail_helpers import extract_email
+from my_cli.util.mail_helpers import extract_display_name, extract_email, parse_message_line
 
 
 # ---------------------------------------------------------------------------
@@ -178,17 +178,9 @@ def cmd_process_inbox(args) -> None:
     for line in result.strip().split("\n"):
         if not line.strip():
             continue
-        parts = line.split(FIELD_SEPARATOR)
-        if len(parts) < 6:
+        msg = parse_message_line(line, ["account", "id", "subject", "sender", "date", "flagged"], FIELD_SEPARATOR)
+        if msg is None:
             continue
-        msg = {
-            "account": parts[0],
-            "id": int(parts[1]) if parts[1].isdigit() else parts[1],
-            "subject": parts[2],
-            "sender": parts[3],
-            "date": parts[4],
-            "flagged": parts[5].lower() == "true",
-        }
 
         if msg["flagged"]:
             flagged.append(msg)
@@ -204,7 +196,7 @@ def cmd_process_inbox(args) -> None:
     if flagged:
         text += f"\n\nFLAGGED ({len(flagged)}) — High priority:"
         for m in flagged[:5]:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
         if len(flagged) > 5:
             text += f"\n  ... and {len(flagged) - 5} more"
@@ -215,7 +207,7 @@ def cmd_process_inbox(args) -> None:
     if people:
         text += f"\n\nPEOPLE ({len(people)}) — Requires attention:"
         for m in people[:5]:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
         if len(people) > 5:
             text += f"\n  ... and {len(people) - 5} more"
@@ -226,7 +218,7 @@ def cmd_process_inbox(args) -> None:
     if notifications:
         text += f"\n\nNOTIFICATIONS ({len(notifications)}) — Bulk actions:"
         for m in notifications[:5]:
-            sender = m["sender"].split("<")[0].strip().strip('"') if "<" in m["sender"] else m["sender"]
+            sender = extract_display_name(m["sender"])
             text += f"\n  [{m['id']}] {truncate(sender, 20)}: {truncate(m['subject'], 50)}"
         if len(notifications) > 5:
             text += f"\n  ... and {len(notifications) - 5} more"
@@ -375,14 +367,9 @@ def cmd_weekly_review(args) -> None:
         for line in flagged_result.strip().split("\n"):
             if not line.strip():
                 continue
-            parts = line.split(FIELD_SEPARATOR)
-            if len(parts) >= 4:
-                flagged_messages.append({
-                    "id": int(parts[0]) if parts[0].isdigit() else parts[0],
-                    "subject": parts[1],
-                    "sender": parts[2],
-                    "date": parts[3],
-                })
+            msg = parse_message_line(line, ["id", "subject", "sender", "date"], FIELD_SEPARATOR)
+            if msg is not None:
+                flagged_messages.append(msg)
 
     # Parse messages with attachments
     attachment_messages = []
@@ -390,15 +377,10 @@ def cmd_weekly_review(args) -> None:
         for line in attachments_result.strip().split("\n"):
             if not line.strip():
                 continue
-            parts = line.split(FIELD_SEPARATOR)
-            if len(parts) >= 5:
-                attachment_messages.append({
-                    "id": int(parts[0]) if parts[0].isdigit() else parts[0],
-                    "subject": parts[1],
-                    "sender": parts[2],
-                    "date": parts[3],
-                    "attachment_count": int(parts[4]) if parts[4].isdigit() else 0,
-                })
+            msg = parse_message_line(line, ["id", "subject", "sender", "date", "attachment_count"], FIELD_SEPARATOR)
+            if msg is not None:
+                msg["attachment_count"] = int(msg["attachment_count"]) if str(msg["attachment_count"]).isdigit() else 0
+                attachment_messages.append(msg)
 
     # Parse unreplied messages (filter out noreply senders)
     unreplied_messages = []
@@ -406,17 +388,13 @@ def cmd_weekly_review(args) -> None:
         for line in unreplied_result.strip().split("\n"):
             if not line.strip():
                 continue
-            parts = line.split(FIELD_SEPARATOR)
-            if len(parts) >= 4:
-                sender_email = extract_email(parts[2])
-                # Skip if sender matches noreply patterns
-                if not any(pattern in sender_email.lower() for pattern in NOREPLY_PATTERNS):
-                    unreplied_messages.append({
-                        "id": int(parts[0]) if parts[0].isdigit() else parts[0],
-                        "subject": parts[1],
-                        "sender": parts[2],
-                        "date": parts[3],
-                    })
+            msg = parse_message_line(line, ["id", "subject", "sender", "date"], FIELD_SEPARATOR)
+            if msg is None:
+                continue
+            sender_email = extract_email(msg["sender"])
+            # Skip if sender matches noreply patterns
+            if not any(pattern in sender_email.lower() for pattern in NOREPLY_PATTERNS):
+                unreplied_messages.append(msg)
 
     # Build report
     scope = f" for account '{account}'" if account else " across all accounts"
