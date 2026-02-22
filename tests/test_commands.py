@@ -970,3 +970,60 @@ def test_cmd_context_json(monkeypatch, mock_args, capsys):
     assert '"message":' in captured.out
     assert '"thread":' in captured.out
     assert '"subject": "Context Subject"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_find_related (ai.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_find_related_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_find_related searches and groups by conversation."""
+    from unittest.mock import Mock
+    from my_cli.commands.mail.ai import cmd_find_related
+
+    search_result = (
+        f"1{FIELD_SEPARATOR}Project Update{FIELD_SEPARATOR}alice@test.com{FIELD_SEPARATOR}Mon Feb 10 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work\n"
+        f"2{FIELD_SEPARATOR}Re: Project Update{FIELD_SEPARATOR}bob@test.com{FIELD_SEPARATOR}Tue Feb 11 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work"
+    )
+    mock_run = Mock(return_value=search_result)
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(query="Project Update", json=False)
+    cmd_find_related(args)
+
+    captured = capsys.readouterr()
+    assert "Related messages" in captured.out
+    assert "Project Update" in captured.out
+
+
+def test_cmd_find_related_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_find_related JSON output groups by thread."""
+    from unittest.mock import Mock
+    from my_cli.commands.mail.ai import cmd_find_related
+
+    search_result = (
+        f"1{FIELD_SEPARATOR}Meeting Notes{FIELD_SEPARATOR}alice@test.com{FIELD_SEPARATOR}Mon Feb 10 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work"
+    )
+    mock_run = Mock(return_value=search_result)
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(query="Meeting Notes", json=True)
+    cmd_find_related(args)
+
+    captured = capsys.readouterr()
+    assert "meeting notes" in captured.out  # normalized subject key
+
+
+def test_cmd_find_related_empty(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_find_related handles no results."""
+    from unittest.mock import Mock
+    from my_cli.commands.mail.ai import cmd_find_related
+
+    mock_run = Mock(return_value="")
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(query="nonexistent", json=False)
+    cmd_find_related(args)
+
+    captured = capsys.readouterr()
+    assert "No messages found" in captured.out
