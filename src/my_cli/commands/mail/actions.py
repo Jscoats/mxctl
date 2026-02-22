@@ -436,6 +436,9 @@ def cmd_not_junk(args) -> None:
         if account in get_gmail_accounts():
             if "[Gmail]/Spam" not in candidates:
                 candidates.append("[Gmail]/Spam")
+            # Gmail's label architecture means messages may only be findable via All Mail
+            if "[Gmail]/All Mail" not in candidates:
+                candidates.append("[Gmail]/All Mail")
         else:
             # For non-Gmail accounts also try "Spam" as an alias
             if "Spam" not in candidates:

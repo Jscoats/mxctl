@@ -92,6 +92,21 @@ def log_batch_operation(
     _save_undo_log(operations)
 
 
+def log_fence_operation(operation_type: str) -> None:
+    """Log a fence sentinel for operations that cannot be undone (e.g. batch-read, batch-flag).
+
+    This claims the undo slot so that a subsequent `my mail undo` does not silently
+    skip past these operations and accidentally undo an earlier undoable entry.
+    """
+    operations = _load_undo_log(include_stale=True)
+    operations.append({
+        "type": "fence",
+        "operation": operation_type,
+        "timestamp": datetime.now().isoformat(),
+    })
+    _save_undo_log(operations)
+
+
 def cmd_undo_list(args) -> None:
     """List recent undoable operations."""
     operations = _load_undo_log()
@@ -147,6 +162,20 @@ def cmd_undo(args) -> None:
     # Pop the most recent operation — do NOT write the log yet;
     # only commit removal after the restore work succeeds.
     last_op = operations.pop()
+
+    # Fence sentinel: operation was run but cannot be undone.
+    if last_op.get("type") == "fence":
+        op_name = last_op.get("operation", "unknown")
+        if not force:
+            die(
+                f"The most recent operation ({op_name}) cannot be undone. "
+                f"Use `my mail undo --list` to see older undoable operations, "
+                f"or `my mail undo --force` to skip to the next undoable entry."
+            )
+        # --force: pop the fence and continue to the next entry
+        if not operations:
+            die("No undoable operations remain after skipping the fence.")
+        last_op = operations.pop()
 
     operation_type = last_op["operation"]
     account = last_op["account"]

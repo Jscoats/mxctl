@@ -38,7 +38,7 @@ def cmd_to_todoist(args) -> None:
     if not isinstance(token, str) or not token.strip():
         die("Todoist API token is invalid. Check 'todoist_api_token' in ~/.config/my/config.json")
 
-    ssl_context = ssl.create_default_context()
+    ssl_context = ssl.create_default_context(cafile="/etc/ssl/cert.pem")
 
     # Read the email via AppleScript
     script = f"""
@@ -74,6 +74,8 @@ def cmd_to_todoist(args) -> None:
             if match is None:
                 die(f"Todoist project '{project}' not found. Check the name and try again.")
             project_id = match["id"]
+        except (ssl.SSLError, ssl.CertificateError):
+            die("SSL certificate error. Try running: /usr/bin/python3 /Applications/Python*/Install\\ Certificates.command")
         except urllib.error.HTTPError as e:
             die(f"Todoist API error resolving project ({e.code}): {e.read().decode('utf-8')}")
         except urllib.error.URLError as e:
@@ -115,6 +117,8 @@ def cmd_to_todoist(args) -> None:
                 text += f"\nURL: {task_url}"
 
             format_output(args, text, json_data=response_data)
+    except (ssl.SSLError, ssl.CertificateError):
+        die("SSL certificate error. Try running: /usr/bin/python3 /Applications/Python*/Install\\ Certificates.command")
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
         die(f"Todoist API error ({e.code}): {error_body}")

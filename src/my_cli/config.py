@@ -120,15 +120,18 @@ def _save_json(path: str, data: dict) -> None:
 _config_warned: bool = False
 
 
-def get_config() -> dict:
+def get_config(required: bool = False, warn: bool = True) -> dict:
     global _config_warned
-    if not _config_warned and not os.path.isfile(CONFIG_FILE):
-        import sys
-        print(
-            "No config found. Run `my mail init` to set up your default account.",
-            file=sys.stderr,
-        )
-        _config_warned = True
+    if not os.path.isfile(CONFIG_FILE):
+        if required:
+            die("No config found. Run `my mail init` to set up your default account.")
+        if warn and not _config_warned:
+            import sys
+            print(
+                "No config found. Run `my mail init` to set up your default account.",
+                file=sys.stderr,
+            )
+            _config_warned = True
     return _load_json(CONFIG_FILE)
 
 
@@ -150,7 +153,7 @@ def resolve_account(explicit: str | None) -> str | None:
         save_last_account(explicit)
         return explicit
 
-    cfg = get_config()
+    cfg = get_config(required=False, warn=False)
     # Check namespaced key first, fall back to legacy flat key
     default_account = cfg.get("mail", {}).get("default_account") or cfg.get("default_account")
     if default_account:
@@ -168,5 +171,5 @@ def validate_limit(limit: int) -> int:
 
 def get_gmail_accounts() -> list[str]:
     """Return list of account names configured as Gmail accounts."""
-    cfg = get_config()
+    cfg = get_config(required=False, warn=False)
     return cfg.get("mail", {}).get("gmail_accounts", [])

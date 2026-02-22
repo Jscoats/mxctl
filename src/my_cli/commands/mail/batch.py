@@ -11,7 +11,7 @@ from my_cli.config import (
 from my_cli.util.applescript import escape, run
 from my_cli.util.dates import to_applescript_date
 from my_cli.util.formatting import die, format_output
-from my_cli.commands.mail.undo import log_batch_operation
+from my_cli.commands.mail.undo import log_batch_operation, log_fence_operation
 from my_cli.util.mail_helpers import resolve_mailbox
 
 
@@ -47,6 +47,7 @@ def cmd_batch_read(args) -> None:
 
     result = run(script)
     count = int(result) if result.isdigit() else 0
+    log_fence_operation("batch-read")
     format_output(args, f"Marked {count} messages as read in {mailbox} [{account}] (limit: {limit}).",
                   json_data={"mailbox": mailbox, "account": account, "marked_read": count, "limit": limit})
     print("Note: batch-read/batch-flag cannot be undone. Use --limit to cap scope (default: 25).", file=sys.stderr)
@@ -87,6 +88,7 @@ def cmd_batch_flag(args) -> None:
 
     result = run(script)
     count = int(result) if result.isdigit() else 0
+    log_fence_operation("batch-flag")
     format_output(args, f"Flagged {count} messages from '{sender}' in account '{account}' (limit: {limit}).",
                   json_data={"sender": sender, "account": account, "flagged": count, "limit": limit})
     print("Note: batch-read/batch-flag cannot be undone. Use --limit to cap scope (default: 25).", file=sys.stderr)
