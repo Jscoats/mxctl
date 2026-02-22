@@ -24,7 +24,7 @@ src/my_cli/
 │   └── dates.py                  # parse_date(), to_applescript_date()
 └── commands/
     └── mail/                      # All mail subcommands (16 modules)
-        ├── __init__.py            # Auto-wires all registered command modules
+        ├── __init__.py            # Imports and wires all registered command modules
         ├── accounts.py            # inbox, accounts, mailboxes
         ├── messages.py            # list, read, search
         ├── actions.py             # mark-read, mark-unread, flag, unflag, move, delete
@@ -67,7 +67,7 @@ This is implemented in `config.py:resolve_account()` and used by `util/mail_help
 
 ## Command Registration
 
-Each command module in `commands/mail/` exports a `register(subparsers)` function that adds its commands to the argparse tree. The `commands/mail/__init__.py` router auto-discovers and calls all `register()` functions.
+Each command module in `commands/mail/` exports a `register(subparsers)` function that adds its commands to the argparse tree. The `commands/mail/__init__.py` router explicitly imports and calls all `register()` functions.
 
 To add a new command:
 

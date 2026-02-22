@@ -95,7 +95,7 @@ my mail to-todoist 123 --project Work
 - `batch-read` - Mark all unread as read
 - `batch-flag` - Flag all from sender
 - `batch-move` - Move messages by sender
-- `batch-delete` - Delete messages older than N days
+- `batch-delete` - Delete messages by sender and/or age
 - `undo`, `undo --list` - Rollback batch operations
 
 ### Analytics & Tools
@@ -115,10 +115,11 @@ my mail to-todoist 123 --project Work
 - `draft` - Create email draft (supports templates)
 - `templates list/create/show/delete` - Manage email templates
 - `reply`, `forward` - Create response drafts
+- `thread` - Show full conversation thread for a message
 
 ### Integrations
 - `to-todoist` - Send email to Todoist as task
-- `export` - Export messages to Mbox format
+- `export` - Export messages as markdown
 
 ## 🔧 Requirements
 
