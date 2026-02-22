@@ -215,7 +215,7 @@ def cmd_undo(args) -> None:
         else:
             die(f"Unknown operation type '{operation_type}'. Cannot undo.")
 
-    except Exception:
+    except BaseException:
         operations.append(last_op)
         _save_undo_log(operations)  # put it back
         raise

@@ -11,7 +11,6 @@ from my_cli.config import (
     NOREPLY_PATTERNS,
     RECORD_SEPARATOR,
     resolve_account,
-    validate_limit,
 )
 from my_cli.util.applescript import escape, run, validate_msg_id
 from my_cli.util.applescript_templates import inbox_iterator_all_accounts
