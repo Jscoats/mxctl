@@ -67,30 +67,60 @@ class TestResolveMessageContextErrors:
 
 
 class TestAppleScriptErrorHandling:
-    """Test handling of malformed or empty AppleScript output.
+    """Test that command functions handle AppleScript errors and malformed data gracefully."""
 
-    Note: Full end-to-end AI command testing requires more complex mocking
-    infrastructure. These tests verify the parsing logic handles edge cases.
-    """
+    def test_applescript_error_propagates_as_system_exit(self, monkeypatch):
+        """cmd_batch_move should propagate SystemExit when run() exits due to an AppleScript error."""
+        from my_cli.commands.mail.batch import cmd_batch_move
 
-    def test_empty_string_returns_empty(self):
-        """Test that empty strings are handled in field parsing."""
-        parts = "".split(FIELD_SEPARATOR)
-        assert len(parts) == 1  # Empty string splits to ['']
-        assert parts[0] == ""
+        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        # Simulate run() encountering an AppleScript error and calling sys.exit(1)
+        def failing_run(script, **kwargs):
+            raise SystemExit(1)
+        monkeypatch.setattr("my_cli.commands.mail.batch.run", failing_run)
 
-    def test_insufficient_field_count_detection(self):
-        """Test detection of malformed data with too few fields."""
-        line = f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Subject{FIELD_SEPARATOR}sender@example.com"  # Only 4 fields
-        parts = line.split(FIELD_SEPARATOR)
-        # Should have at least 5 fields for summary, 6 for triage
-        assert len(parts) < 5
+        args = Namespace(
+            account="iCloud", from_sender="spam@example.com",
+            to_mailbox="Archive", dry_run=False, limit=None, json=False,
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            cmd_batch_move(args)
+        assert exc_info.value.code == 1
 
-    def test_valid_field_count_detection(self):
-        """Test valid message parsing."""
-        line = f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}true"
-        parts = line.split(FIELD_SEPARATOR)
-        assert len(parts) >= 5  # Has enough fields for message parsing
+    def test_cmd_read_with_malformed_applescript_output(self, monkeypatch, capsys):
+        """cmd_read should fall back gracefully when run() returns fewer fields than expected."""
+        from my_cli.commands.mail.messages import cmd_read
+
+        monkeypatch.setattr(
+            "my_cli.commands.mail.messages.resolve_message_context",
+            lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
+        )
+        # Return only 3 fields — far fewer than the 16 cmd_read expects
+        malformed_output = f"42{FIELD_SEPARATOR}Subject Only{FIELD_SEPARATOR}sender@example.com"
+        monkeypatch.setattr("my_cli.commands.mail.messages.run", Mock(return_value=malformed_output))
+
+        args = Namespace(account="iCloud", mailbox="INBOX", id=42, short=False, json=False)
+        # Should NOT raise — cmd_read has a graceful fallback for < 16 fields
+        cmd_read(args)
+
+        captured = capsys.readouterr()
+        # The fallback branch prints the raw result under "Message details:"
+        assert "Message details:" in captured.out
+
+    def test_batch_delete_missing_filter_args_dies(self, monkeypatch):
+        """cmd_batch_delete should exit with code 1 when neither --older-than nor --from-sender is given."""
+        from my_cli.commands.mail.batch import cmd_batch_delete
+
+        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+
+        args = Namespace(
+            account="iCloud", mailbox=None,
+            older_than=None, from_sender=None,
+            dry_run=False, force=False, limit=None, json=False,
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            cmd_batch_delete(args)
+        assert exc_info.value.code == 1
 
 
 class TestValidateLimitEdgeCases:
@@ -118,32 +148,72 @@ class TestValidateLimitEdgeCases:
 
 
 class TestBatchOperationDryRun:
-    """Test batch operation dry-run logic.
+    """Test that batch commands honour the dry_run flag and report what WOULD be done."""
 
-    Note: Full integration testing of batch commands requires mocking the
-    entire AppleScript pipeline. These tests verify the dry-run flag behavior
-    exists and is checked.
-    """
+    def test_batch_move_dry_run_reports_would_move(self, monkeypatch, capsys):
+        """cmd_batch_move with dry_run=True should print 'Would move' without actually moving."""
+        from my_cli.commands.mail.batch import cmd_batch_move
 
-    def test_batch_operations_have_dry_run_parameter(self):
-        """Verify batch commands support dry_run parameter."""
-        from my_cli.commands.mail.batch import cmd_batch_move, cmd_batch_delete
+        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        # First run() call returns the count of matching messages; second should NOT be called.
+        mock_run = Mock(return_value="7")
+        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
 
-        # Both should accept args with dry_run attribute
-        # This is a smoke test that the parameter exists in the codebase
-        assert callable(cmd_batch_move)
-        assert callable(cmd_batch_delete)
+        args = Namespace(
+            account="iCloud", from_sender="newsletter@example.com",
+            to_mailbox="Archive", dry_run=True, limit=None, json=False,
+        )
+        cmd_batch_move(args)
 
-    def test_dry_run_attribute_defaults_false(self, mock_args):
-        """Test that getattr for dry_run defaults to False."""
-        args = mock_args()
-        dry_run = getattr(args, "dry_run", False)
-        assert dry_run is False
+        captured = capsys.readouterr()
+        assert "Dry run" in captured.out
+        assert "Would move" in captured.out
+        assert "7" in captured.out
+        # Only the count script should have been executed — not the move script
+        assert mock_run.call_count == 1
 
-    def test_dry_run_attribute_can_be_true(self, mock_args):
-        """Test that dry_run can be set to True."""
-        args = mock_args(dry_run=True)
-        assert args.dry_run is True
+    def test_batch_move_dry_run_respects_limit(self, monkeypatch, capsys):
+        """cmd_batch_move with dry_run=True and --limit should cap the reported count."""
+        from my_cli.commands.mail.batch import cmd_batch_move
+
+        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        # 50 matching messages, but limit is 10
+        mock_run = Mock(return_value="50")
+        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+
+        args = Namespace(
+            account="iCloud", from_sender="bulk@example.com",
+            to_mailbox="Bulk", dry_run=True, limit=10, json=False,
+        )
+        cmd_batch_move(args)
+
+        captured = capsys.readouterr()
+        assert "Dry run" in captured.out
+        assert "10" in captured.out  # effective count capped at limit
+        assert "50" not in captured.out  # full total should not appear in text output
+
+    def test_batch_delete_dry_run_reports_would_delete(self, monkeypatch, capsys):
+        """cmd_batch_delete with dry_run=True should print 'Would delete' without deleting."""
+        from my_cli.commands.mail.batch import cmd_batch_delete
+
+        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        # Count script returns 15 matching messages
+        mock_run = Mock(return_value="15")
+        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+
+        args = Namespace(
+            account="iCloud", mailbox="INBOX",
+            older_than=30, from_sender=None,
+            dry_run=True, force=False, limit=None, json=False,
+        )
+        cmd_batch_delete(args)
+
+        captured = capsys.readouterr()
+        assert "Dry run" in captured.out
+        assert "Would delete" in captured.out
+        assert "15" in captured.out
+        # Delete script must NOT have been called — only the count script
+        assert mock_run.call_count == 1
 
 
 # ---------------------------------------------------------------------------

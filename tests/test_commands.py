@@ -1027,3 +1027,452 @@ def test_cmd_find_related_empty(monkeypatch, mock_args, capsys):
 
     captured = capsys.readouterr()
     assert "No messages found" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_accounts (accounts.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_accounts_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_accounts lists configured mail accounts."""
+    from my_cli.commands.mail.accounts import cmd_accounts
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
+        f"Work Gmail{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@work.com{FIELD_SEPARATOR}false\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args()
+    cmd_accounts(args)
+
+    captured = capsys.readouterr()
+    assert "Mail Accounts:" in captured.out
+    assert "iCloud" in captured.out
+    assert "john@icloud.com" in captured.out
+    assert "enabled" in captured.out
+    assert "disabled" in captured.out
+
+
+def test_cmd_accounts_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_accounts --json returns JSON array of accounts."""
+    from my_cli.commands.mail.accounts import cmd_accounts
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args(json=True)
+    cmd_accounts(args)
+
+    captured = capsys.readouterr()
+    assert '"name": "iCloud"' in captured.out
+    assert '"email": "john@icloud.com"' in captured.out
+    assert '"enabled": true' in captured.out
+
+
+def test_cmd_accounts_empty(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_accounts handles no accounts found."""
+    from my_cli.commands.mail.accounts import cmd_accounts
+
+    mock_run = Mock(return_value="")
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args()
+    cmd_accounts(args)
+
+    captured = capsys.readouterr()
+    assert "No mail accounts found" in captured.out
+
+
+def test_cmd_accounts_applescript_content(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_accounts sends AppleScript that reads account properties."""
+    from my_cli.commands.mail.accounts import cmd_accounts
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args()
+    cmd_accounts(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "every account" in script_sent
+    assert "user name of acct" in script_sent
+    assert "enabled of acct" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_mailboxes (accounts.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_mailboxes_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mailboxes lists all mailboxes across all accounts."""
+    from my_cli.commands.mail.accounts import cmd_mailboxes
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}3\n"
+        f"iCloud{FIELD_SEPARATOR}Sent{FIELD_SEPARATOR}0\n"
+        f"Work{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}1\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    # Patch resolve_account to return None so the all-accounts code path is taken
+    monkeypatch.setattr("my_cli.commands.mail.accounts.resolve_account", lambda x: None)
+
+    args = mock_args(account=None)
+    cmd_mailboxes(args)
+
+    captured = capsys.readouterr()
+    assert "All Mailboxes:" in captured.out
+    assert "INBOX" in captured.out
+    assert "(3 unread)" in captured.out
+    assert "[iCloud]" in captured.out
+
+
+def test_cmd_mailboxes_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mailboxes --json returns JSON array of mailboxes."""
+    from my_cli.commands.mail.accounts import cmd_mailboxes
+
+    mock_run = Mock(return_value=(
+        f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}5\n"
+        f"iCloud{FIELD_SEPARATOR}Sent{FIELD_SEPARATOR}0\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    # Patch resolve_account to return None so the all-accounts code path is taken
+    monkeypatch.setattr("my_cli.commands.mail.accounts.resolve_account", lambda x: None)
+
+    args = mock_args(account=None, json=True)
+    cmd_mailboxes(args)
+
+    captured = capsys.readouterr()
+    assert '"account": "iCloud"' in captured.out
+    assert '"name": "INBOX"' in captured.out
+    assert '"unread": 5' in captured.out
+
+
+def test_cmd_mailboxes_account_filter(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mailboxes -a scopes to a single account."""
+    from my_cli.commands.mail.accounts import cmd_mailboxes
+
+    mock_run = Mock(return_value=(
+        f"INBOX{FIELD_SEPARATOR}2\n"
+        f"Sent Messages{FIELD_SEPARATOR}0\n"
+        f"Junk{FIELD_SEPARATOR}0\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+
+    args = mock_args(account="iCloud")
+    cmd_mailboxes(args)
+
+    captured = capsys.readouterr()
+    assert "Mailboxes in iCloud:" in captured.out
+    assert "INBOX" in captured.out
+    assert "(2 unread)" in captured.out
+    # Verify the script scopes to a single account
+    script_sent = mock_run.call_args[0][0]
+    assert 'account "iCloud"' in script_sent
+    assert "every account" not in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_mark_unread (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_mark_unread_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mark_unread marks a message as unread."""
+    from my_cli.commands.mail.actions import cmd_mark_unread
+
+    mock_run = Mock(return_value="Important Message")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=456)
+    cmd_mark_unread(args)
+
+    captured = capsys.readouterr()
+    assert "marked as unread" in captured.out
+    assert "Important Message" in captured.out
+
+
+def test_cmd_mark_unread_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mark_unread --json returns JSON with status=unread."""
+    from my_cli.commands.mail.actions import cmd_mark_unread
+
+    mock_run = Mock(return_value="Important Message")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=456, json=True)
+    cmd_mark_unread(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 456' in captured.out
+    assert '"status": "unread"' in captured.out
+    assert '"subject": "Important Message"' in captured.out
+
+
+def test_cmd_mark_unread_applescript_sets_read_false(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_mark_unread AppleScript sets read status to false."""
+    from my_cli.commands.mail.actions import cmd_mark_unread
+
+    mock_run = Mock(return_value="Important Message")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=456)
+    cmd_mark_unread(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "read status" in script_sent
+    assert "false" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_unflag (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_unflag_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_unflag removes flag from a message."""
+    from my_cli.commands.mail.actions import cmd_unflag
+
+    mock_run = Mock(return_value="Flagged Item")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=789)
+    cmd_unflag(args)
+
+    captured = capsys.readouterr()
+    assert "unflagged" in captured.out
+    assert "Flagged Item" in captured.out
+
+
+def test_cmd_unflag_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_unflag --json returns JSON with status=unflagged."""
+    from my_cli.commands.mail.actions import cmd_unflag
+
+    mock_run = Mock(return_value="Flagged Item")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=789, json=True)
+    cmd_unflag(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 789' in captured.out
+    assert '"status": "unflagged"' in captured.out
+    assert '"subject": "Flagged Item"' in captured.out
+
+
+def test_cmd_unflag_applescript_sets_flagged_false(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_unflag AppleScript sets flagged status to false."""
+    from my_cli.commands.mail.actions import cmd_unflag
+
+    mock_run = Mock(return_value="Flagged Item")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=789)
+    cmd_unflag(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "flagged status" in script_sent
+    assert "false" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_move (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_move_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_move moves a message between mailboxes."""
+    from my_cli.commands.mail.actions import cmd_move
+
+    mock_run = Mock(return_value="Project Proposal")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive")
+    cmd_move(args)
+
+    captured = capsys.readouterr()
+    assert "Project Proposal" in captured.out
+    assert "moved from" in captured.out
+    assert "INBOX" in captured.out
+    assert "Archive" in captured.out
+
+
+def test_cmd_move_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_move --json returns JSON with source and destination."""
+    from my_cli.commands.mail.actions import cmd_move
+
+    mock_run = Mock(return_value="Project Proposal")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive", json=True)
+    cmd_move(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 321' in captured.out
+    assert '"subject": "Project Proposal"' in captured.out
+    assert '"from": "INBOX"' in captured.out
+    assert '"to": "Archive"' in captured.out
+
+
+def test_cmd_move_applescript_uses_mailboxes(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_move AppleScript references source and destination mailboxes."""
+    from my_cli.commands.mail.actions import cmd_move
+
+    mock_run = Mock(return_value="Project Proposal")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive")
+    cmd_move(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "INBOX" in script_sent
+    assert "Archive" in script_sent
+    assert "move theMsg to destMb" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_junk (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_junk_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_junk marks a message as junk."""
+    from my_cli.commands.mail.actions import cmd_junk
+
+    mock_run = Mock(return_value="Suspicious Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=555)
+    cmd_junk(args)
+
+    captured = capsys.readouterr()
+    assert "marked as junk" in captured.out
+    assert "Suspicious Newsletter" in captured.out
+
+
+def test_cmd_junk_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_junk --json returns JSON with status=junk."""
+    from my_cli.commands.mail.actions import cmd_junk
+
+    mock_run = Mock(return_value="Suspicious Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=555, json=True)
+    cmd_junk(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 555' in captured.out
+    assert '"status": "junk"' in captured.out
+    assert '"subject": "Suspicious Newsletter"' in captured.out
+
+
+def test_cmd_junk_applescript_sets_junk_true(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_junk AppleScript sets junk mail status to true."""
+    from my_cli.commands.mail.actions import cmd_junk
+
+    mock_run = Mock(return_value="Suspicious Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=555)
+    cmd_junk(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "junk mail status" in script_sent
+    assert "true" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_not_junk (actions.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_not_junk_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_not_junk marks a message as not junk and moves to INBOX."""
+    from my_cli.commands.mail.actions import cmd_not_junk
+
+    mock_run = Mock(return_value="Legitimate Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=666, account="iCloud", mailbox=None)
+    cmd_not_junk(args)
+
+    captured = capsys.readouterr()
+    assert "marked as not junk" in captured.out
+    assert "moved to INBOX" in captured.out
+    assert "Legitimate Newsletter" in captured.out
+
+
+def test_cmd_not_junk_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_not_junk --json returns JSON with status=not_junk."""
+    from my_cli.commands.mail.actions import cmd_not_junk
+
+    mock_run = Mock(return_value="Legitimate Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=666, account="iCloud", mailbox=None, json=True)
+    cmd_not_junk(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 666' in captured.out
+    assert '"status": "not_junk"' in captured.out
+    assert '"moved_to": "INBOX"' in captured.out
+
+
+def test_cmd_not_junk_applescript_moves_to_inbox(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_not_junk AppleScript clears junk status and moves to INBOX."""
+    from my_cli.commands.mail.actions import cmd_not_junk
+
+    mock_run = Mock(return_value="Legitimate Newsletter")
+    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+    args = mock_args(id=666, account="iCloud", mailbox=None)
+    cmd_not_junk(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "junk mail status" in script_sent
+    assert "false" in script_sent
+    assert "move theMsg to inboxMb" in script_sent
+
+
+# ---------------------------------------------------------------------------
+# cmd_check (system.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_check_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_check triggers a mail fetch and reports success."""
+    from my_cli.commands.mail.system import cmd_check
+
+    mock_run = Mock(return_value="ok")
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args()
+    cmd_check(args)
+
+    captured = capsys.readouterr()
+    assert "Mail check triggered." in captured.out
+
+
+def test_cmd_check_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_check --json returns JSON with status=checked."""
+    from my_cli.commands.mail.system import cmd_check
+
+    mock_run = Mock(return_value="ok")
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args(json=True)
+    cmd_check(args)
+
+    captured = capsys.readouterr()
+    assert '"status": "checked"' in captured.out
+
+
+def test_cmd_check_applescript_calls_check_for_new_mail(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_check AppleScript invokes 'check for new mail'."""
+    from my_cli.commands.mail.system import cmd_check
+
+    mock_run = Mock(return_value="ok")
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args()
+    cmd_check(args)
+
+    script_sent = mock_run.call_args[0][0]
+    assert "check for new mail" in script_sent
