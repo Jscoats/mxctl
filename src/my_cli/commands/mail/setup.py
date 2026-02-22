@@ -30,23 +30,24 @@ def _radio_select(prompt: str, options: list[str]) -> int:
     n = len(options)
 
     def _render(first: bool = False) -> None:
+        # In raw mode \n doesn't imply \r — always use \r\n explicitly.
+        w = sys.stdout.write
         if not first:
-            sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
-        print(f"{_B}{prompt}{_R}")
+            w(f"\r\x1b[{n + 1}A\x1b[J")
+        w(f"{_B}{prompt}{_R}\r\n")
         for i, opt in enumerate(options):
             if i == current:
-                print(f"  {_G}(●) {opt}{_R}")
+                w(f"  {_G}(●) {opt}{_R}\r\n")
             else:
-                print(f"  ( ) {opt}")
-        sys.stdout.write(f"{_D}  ↑/↓ navigate   Space/Enter select   Ctrl+C cancel{_R}")
+                w(f"  ( ) {opt}\r\n")
+        w(f"{_D}  ↑/↓ navigate   Space/Enter select   Ctrl+C cancel{_R}")
         sys.stdout.flush()
-
-    _render(first=True)
 
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     tty.setraw(fd)
     try:
+        _render(first=True)
         while True:
             ch = os.read(fd, 1)
             if ch == b"\x1b":
@@ -78,25 +79,25 @@ def _checkbox_select(prompt: str, options: list[str]) -> list[int]:
     n = len(options)
 
     def _render(first: bool = False) -> None:
+        # In raw mode \n doesn't imply \r — always use \r\n explicitly.
+        w = sys.stdout.write
         if not first:
-            sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
-        print(f"{_B}{prompt}{_R}")
+            w(f"\r\x1b[{n + 1}A\x1b[J")
+        w(f"{_B}{prompt}{_R}\r\n")
         for i, opt in enumerate(options):
             box = f"{_G}[x]{_R}" if i in selected else "[ ]"
-            cursor = f"{_G}" if i == current else ""
-            reset = _R if i == current else ""
-            print(f"  {cursor}{box} {opt}{reset}")
-        sys.stdout.write(
-            f"{_D}  ↑/↓ navigate   Space toggle   Enter confirm   Ctrl+C cancel{_R}"
-        )
+            if i == current:
+                w(f"  {_G}{box} {opt}{_R}\r\n")
+            else:
+                w(f"  {box} {opt}\r\n")
+        w(f"{_D}  ↑/↓ navigate   Space toggle   Enter confirm   Ctrl+C cancel{_R}")
         sys.stdout.flush()
-
-    _render(first=True)
 
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     tty.setraw(fd)
     try:
+        _render(first=True)
         while True:
             ch = os.read(fd, 1)
             if ch == b"\x1b":
