@@ -15,6 +15,16 @@ _G = "\x1b[1;32m"   # bold green
 _D = "\x1b[90m"     # dim gray
 _B = "\x1b[1m"      # bold
 _R = "\x1b[0m"      # reset
+_W = "\x1b[1;37m"   # bold white
+
+# Styled key hints for the hint bar
+_K_ARROWS = f"{_D}↑/↓{_R}"
+_K_SPACE  = f"{_G}[Space]{_R}"
+_K_ENTER  = f"{_W}[Enter]{_R}"
+_K_CANCEL = f"{_D}Ctrl+C cancel{_R}"
+
+_HINT_RADIO    = f"  {_K_ARROWS} navigate   {_K_SPACE} select   {_K_ENTER} confirm   {_K_CANCEL}"
+_HINT_CHECKBOX = f"  {_K_ARROWS} navigate   {_K_SPACE} toggle   {_K_ENTER} confirm   {_K_CANCEL}"
 
 
 def _is_interactive() -> bool:
@@ -40,7 +50,7 @@ def _radio_select(prompt: str, options: list[str]) -> int:
                 w(f"  {_G}(●) {opt}{_R}\r\n")
             else:
                 w(f"  ( ) {opt}\r\n")
-        w(f"{_D}  ↑/↓ navigate   Space/Enter select   Ctrl+C cancel{_R}")
+        w(_HINT_RADIO)
         sys.stdout.flush()
 
     fd = sys.stdin.fileno()
@@ -90,7 +100,7 @@ def _checkbox_select(prompt: str, options: list[str]) -> list[int]:
                 w(f"  {_G}{box} {opt}{_R}\r\n")
             else:
                 w(f"  {box} {opt}\r\n")
-        w(f"{_D}  ↑/↓ navigate   Space toggle   Enter confirm   Ctrl+C cancel{_R}")
+        w(_HINT_CHECKBOX)
         sys.stdout.flush()
 
     fd = sys.stdin.fileno()
