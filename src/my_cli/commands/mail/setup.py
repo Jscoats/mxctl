@@ -2,10 +2,127 @@
 
 import json
 import os
+import sys
+import tty
+import termios
 
 from my_cli.config import CONFIG_DIR, CONFIG_FILE, FIELD_SEPARATOR, get_config
 from my_cli.util.applescript import run
 from my_cli.util.formatting import format_output
+
+# ANSI helpers
+_G = "\x1b[1;32m"   # bold green
+_D = "\x1b[90m"     # dim gray
+_B = "\x1b[1m"      # bold
+_R = "\x1b[0m"      # reset
+
+
+def _is_interactive() -> bool:
+    """True when running in a real terminal (not a pipe or test)."""
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _radio_select(prompt: str, options: list[str]) -> int:
+    """Arrow-key single-select.  Returns chosen index.
+    Raises KeyboardInterrupt on Ctrl+C.
+    """
+    current = 0
+    n = len(options)
+
+    def _render(first: bool = False) -> None:
+        if not first:
+            sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
+        print(f"{_B}{prompt}{_R}")
+        for i, opt in enumerate(options):
+            if i == current:
+                print(f"  {_G}(●) {opt}{_R}")
+            else:
+                print(f"  ( ) {opt}")
+        sys.stdout.write(f"{_D}  ↑/↓ navigate   Space/Enter select   Ctrl+C cancel{_R}")
+        sys.stdout.flush()
+
+    _render(first=True)
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    tty.setraw(fd)
+    try:
+        while True:
+            ch = os.read(fd, 1)
+            if ch == b"\x1b":
+                seq = os.read(fd, 2)
+                if seq == b"[A":
+                    current = (current - 1) % n
+                elif seq == b"[B":
+                    current = (current + 1) % n
+            elif ch in (b"\r", b"\n", b" "):
+                break
+            elif ch == b"\x03":
+                raise KeyboardInterrupt
+            _render()
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
+    sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
+    print(f"{_B}{prompt}{_R}  {_G}{options[current]}{_R}")
+    return current
+
+
+def _checkbox_select(prompt: str, options: list[str]) -> list[int]:
+    """Arrow-key multi-select with Space to toggle.
+    Returns sorted list of selected indices.
+    Raises KeyboardInterrupt on Ctrl+C.
+    """
+    current = 0
+    selected: set[int] = set()
+    n = len(options)
+
+    def _render(first: bool = False) -> None:
+        if not first:
+            sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
+        print(f"{_B}{prompt}{_R}")
+        for i, opt in enumerate(options):
+            box = f"{_G}[x]{_R}" if i in selected else "[ ]"
+            cursor = f"{_G}" if i == current else ""
+            reset = _R if i == current else ""
+            print(f"  {cursor}{box} {opt}{reset}")
+        sys.stdout.write(
+            f"{_D}  ↑/↓ navigate   Space toggle   Enter confirm   Ctrl+C cancel{_R}"
+        )
+        sys.stdout.flush()
+
+    _render(first=True)
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    tty.setraw(fd)
+    try:
+        while True:
+            ch = os.read(fd, 1)
+            if ch == b"\x1b":
+                seq = os.read(fd, 2)
+                if seq == b"[A":
+                    current = (current - 1) % n
+                elif seq == b"[B":
+                    current = (current + 1) % n
+            elif ch == b" ":
+                selected.symmetric_difference_update({current})
+            elif ch in (b"\r", b"\n"):
+                break
+            elif ch == b"\x03":
+                raise KeyboardInterrupt
+            _render()
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
+    result = sorted(selected)
+    sys.stdout.write(f"\r\x1b[{n + 1}A\x1b[J")
+    if result:
+        names = ", ".join(options[i] for i in result)
+        print(f"{_B}{prompt}{_R}  {_G}{names}{_R}")
+    else:
+        print(f"{_B}{prompt}{_R}  {_D}(none){_R}")
+    return result
 
 
 def cmd_init(args) -> None:
@@ -67,19 +184,26 @@ end tell
         print("Error: No enabled mail accounts found.")
         return
 
-    # Auto-select if only one enabled account
+    # --- Select primary account ---
     if len(enabled_accounts) == 1:
         chosen = enabled_accounts[0]
         print(f"Auto-selected the only enabled account: {chosen['name']} ({chosen['email']})")
+    elif _is_interactive():
+        try:
+            opts = [f"{a['name']} ({a['email']})" for a in enabled_accounts]
+            idx = _radio_select("Select primary account:", opts)
+            chosen = enabled_accounts[idx]
+        except KeyboardInterrupt:
+            print("\nSetup cancelled.")
+            return
     else:
-        # Display numbered list
+        # Non-interactive fallback (tests, pipes)
         print("\nAvailable mail accounts:")
         for i, acct in enumerate(enabled_accounts, start=1):
             print(f"  {i}. {acct['name']} ({acct['email']})")
-
         while True:
             try:
-                raw = input(f"\nSelect account [1-{len(enabled_accounts)}]: ").strip()
+                raw = input(f"\nSelect primary account [1-{len(enabled_accounts)}]: ").strip()
             except KeyboardInterrupt:
                 print("\nSetup cancelled.")
                 return
@@ -90,7 +214,7 @@ end tell
                 break
             print(f"Please enter a number between 1 and {len(enabled_accounts)}.")
 
-    # Ask which accounts are Gmail (for mailbox name mapping)
+    # --- Select Gmail accounts ---
     gmail_accounts: list[str] = []
     if len(enabled_accounts) == 1:
         try:
@@ -99,7 +223,16 @@ end tell
             ans = "n"
         if ans == "y":
             gmail_accounts = [enabled_accounts[0]["name"]]
+    elif _is_interactive():
+        try:
+            opts = [f"{a['name']} ({a['email']})" for a in enabled_accounts]
+            indices = _checkbox_select("Which accounts are Gmail?", opts)
+            gmail_accounts = [enabled_accounts[i]["name"] for i in indices]
+        except KeyboardInterrupt:
+            print("\nSetup cancelled.")
+            return
     else:
+        # Non-interactive fallback
         print("\nWhich accounts are Gmail? (enables automatic mailbox name translation)")
         print("Enter numbers separated by commas, or press Enter to skip.")
         for i, acct in enumerate(enabled_accounts, start=1):
@@ -115,10 +248,9 @@ end tell
                     gmail_accounts.append(enabled_accounts[int(part) - 1]["name"])
 
     if gmail_accounts:
-        print(f"Gmail accounts: {', '.join(gmail_accounts)}")
-        print("  Mailbox names like 'Spam', 'Trash', 'Sent' will auto-map to [Gmail]/... equivalents.")
+        print(f"  Mailbox names like 'Spam', 'Trash', 'Sent' will auto-map to [Gmail]/... equivalents.")
 
-    # Optionally ask for Todoist API token
+    # --- Todoist API token ---
     todoist_token = ""
     try:
         raw_token = input("\nTodoist API token (press Enter to skip): ").strip()
