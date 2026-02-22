@@ -22,5 +22,9 @@ dev = ["pytest"]
 [project.scripts]
 my = "my_cli.main:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_cli"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
