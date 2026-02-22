@@ -518,3 +518,455 @@ def test_cmd_open_viewer_guard(monkeypatch, mock_args, capsys):
     script = mock_run.call_args[0][0]
     assert "count of message viewers" in script
     assert "make new message viewer" in script
+
+
+# ---------------------------------------------------------------------------
+# cmd_reply (composite.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_reply_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_reply creates a reply draft."""
+    from my_cli.commands.mail.composite import cmd_reply
+
+    # run() is called twice: once to read the original, once to create the draft
+    mock_run = Mock(side_effect=[
+        f"Original Subject{chr(0x1F)}Sender Name <sender@example.com>{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Original body text",
+        "draft created",
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, body="Thanks for your message.", json=False)
+    cmd_reply(args)
+
+    captured = capsys.readouterr()
+    assert "Reply draft created" in captured.out
+    assert "sender@example.com" in captured.out
+    assert "Re: Original Subject" in captured.out
+
+
+def test_cmd_reply_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_reply --json returns JSON."""
+    from my_cli.commands.mail.composite import cmd_reply
+
+    mock_run = Mock(side_effect=[
+        f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Body",
+        "draft created",
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, body="Reply text.", json=True)
+    cmd_reply(args)
+
+    captured = capsys.readouterr()
+    assert '"status": "reply_draft_created"' in captured.out
+    assert '"to": "sender@example.com"' in captured.out
+    assert '"subject": "Re: Original Subject"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_forward (composite.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_forward_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_forward creates a forward draft."""
+    from my_cli.commands.mail.composite import cmd_forward
+
+    mock_run = Mock(side_effect=[
+        f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Original body",
+        "draft created",
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, to="forward@example.com", json=False)
+    cmd_forward(args)
+
+    captured = capsys.readouterr()
+    assert "Forward draft created" in captured.out
+    assert "forward@example.com" in captured.out
+    assert "Fwd: Original Subject" in captured.out
+
+
+def test_cmd_forward_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_forward --json returns JSON."""
+    from my_cli.commands.mail.composite import cmd_forward
+
+    mock_run = Mock(side_effect=[
+        f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Body",
+        "draft created",
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, to="forward@example.com", json=True)
+    cmd_forward(args)
+
+    captured = capsys.readouterr()
+    assert '"status": "forward_draft_created"' in captured.out
+    assert '"to": "forward@example.com"' in captured.out
+    assert '"subject": "Fwd: Original Subject"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_export (composite.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_export_basic(monkeypatch, mock_args, tmp_path, capsys):
+    """Smoke test: cmd_export writes a markdown file."""
+    from my_cli.commands.mail.composite import cmd_export
+
+    mock_run = Mock(return_value=(
+        f"Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}This is the body."
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    dest = str(tmp_path)
+    args = mock_args(target="123", to=dest, json=False, after=None)
+    cmd_export(args)
+
+    captured = capsys.readouterr()
+    assert "Exported to:" in captured.out
+    # Verify the file was actually created
+    md_files = list(tmp_path.glob("*.md"))
+    assert len(md_files) == 1
+    content = md_files[0].read_text()
+    assert "# Test Subject" in content
+    assert "sender@example.com" in content
+
+
+def test_cmd_export_json(monkeypatch, mock_args, tmp_path, capsys):
+    """Smoke test: cmd_export --json returns JSON."""
+    from my_cli.commands.mail.composite import cmd_export
+
+    mock_run = Mock(return_value=(
+        f"Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Body text."
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    dest = str(tmp_path)
+    args = mock_args(target="123", to=dest, json=True, after=None)
+    cmd_export(args)
+
+    captured = capsys.readouterr()
+    assert '"path":' in captured.out
+    assert '"subject": "Test Subject"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_thread (composite.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_thread_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_thread shows conversation thread."""
+    from my_cli.commands.mail.composite import cmd_thread
+
+    # run() called twice: first for subject, then for thread messages
+    mock_run = Mock(side_effect=[
+        "Original Subject",
+        (
+            f"100{chr(0x1F)}Re: Original Subject{chr(0x1F)}person@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n"
+            f"101{chr(0x1F)}Re: Original Subject{chr(0x1F)}other@example.com{chr(0x1F)}Tue Feb 15 2026{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n"
+        ),
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, json=False, limit=100, all_accounts=False)
+    cmd_thread(args)
+
+    captured = capsys.readouterr()
+    assert "Thread:" in captured.out
+    assert "Original Subject" in captured.out
+    assert "2 messages" in captured.out
+    assert "[100]" in captured.out
+
+
+def test_cmd_thread_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_thread --json returns JSON array."""
+    from my_cli.commands.mail.composite import cmd_thread
+
+    mock_run = Mock(side_effect=[
+        "Original Subject",
+        f"100{chr(0x1F)}Re: Original Subject{chr(0x1F)}person@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n",
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+
+    args = mock_args(id=123, json=True, limit=100, all_accounts=False)
+    cmd_thread(args)
+
+    captured = capsys.readouterr()
+    assert '"id": 100' in captured.out
+    assert '"subject": "Re: Original Subject"' in captured.out
+    assert '"account": "iCloud"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_top_senders (analytics.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_top_senders_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_top_senders shows most frequent senders."""
+    from my_cli.commands.mail.analytics import cmd_top_senders
+
+    mock_run = Mock(return_value=(
+        "alice@example.com\n"
+        "bob@example.com\n"
+        "alice@example.com\n"
+        "alice@example.com\n"
+        "bob@example.com\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+
+    args = mock_args(days=30, limit=10, json=False)
+    cmd_top_senders(args)
+
+    captured = capsys.readouterr()
+    assert "Top 10 senders" in captured.out
+    assert "alice@example.com" in captured.out
+    assert "bob@example.com" in captured.out
+
+
+def test_cmd_top_senders_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_top_senders --json returns JSON array."""
+    from my_cli.commands.mail.analytics import cmd_top_senders
+
+    mock_run = Mock(return_value=(
+        "alice@example.com\n"
+        "alice@example.com\n"
+        "bob@example.com\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+
+    args = mock_args(days=30, limit=10, json=True)
+    cmd_top_senders(args)
+
+    captured = capsys.readouterr()
+    assert '"sender":' in captured.out
+    assert '"count":' in captured.out
+    assert "alice@example.com" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_digest (analytics.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_digest_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_digest shows unread grouped by sender domain."""
+    from my_cli.commands.mail.analytics import cmd_digest
+
+    mock_run = Mock(return_value=(
+        f"iCloud{chr(0x1F)}123{chr(0x1F)}Newsletter Update{chr(0x1F)}news@example.com{chr(0x1F)}Mon Feb 14 2026\n"
+        f"iCloud{chr(0x1F)}124{chr(0x1F)}Hello there{chr(0x1F)}friend@personal.org{chr(0x1F)}Tue Feb 15 2026\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+
+    args = mock_args(json=False)
+    cmd_digest(args)
+
+    captured = capsys.readouterr()
+    assert "Unread Digest" in captured.out
+    assert "example.com" in captured.out
+    assert "[123]" in captured.out
+
+
+def test_cmd_digest_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_digest --json returns JSON dict."""
+    from my_cli.commands.mail.analytics import cmd_digest
+
+    mock_run = Mock(return_value=(
+        f"iCloud{chr(0x1F)}123{chr(0x1F)}Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+
+    args = mock_args(json=True)
+    cmd_digest(args)
+
+    captured = capsys.readouterr()
+    assert '"example.com"' in captured.out
+    assert '"id": 123' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_headers (system.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_headers_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_headers shows email header summary."""
+    from my_cli.commands.mail.system import cmd_headers
+
+    raw_headers = (
+        "From: Sender Name <sender@example.com>\n"
+        "To: recipient@example.com\n"
+        "Subject: Test Subject\n"
+        "Date: Mon, 14 Feb 2026 10:00:00 +0000\n"
+        "Message-Id: <abc123@example.com>\n"
+        "Authentication-Results: mx.example.com; spf=pass dkim=pass dmarc=pass\n"
+        "Received: from mail.example.com by mx.example.com\n"
+        "Received: from smtp.example.com by mail.example.com\n"
+    )
+    mock_run = Mock(return_value=raw_headers)
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args(id=123, json=False, raw=False)
+    cmd_headers(args)
+
+    captured = capsys.readouterr()
+    assert "From: Sender Name <sender@example.com>" in captured.out
+    assert "Subject: Test Subject" in captured.out
+    assert "SPF=pass" in captured.out
+    assert "DKIM=pass" in captured.out
+    assert "Hops: 2" in captured.out
+
+
+def test_cmd_headers_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_headers --json returns JSON dict of headers."""
+    from my_cli.commands.mail.system import cmd_headers
+
+    raw_headers = (
+        "From: sender@example.com\n"
+        "To: recipient@example.com\n"
+        "Subject: Test Subject\n"
+        "Date: Mon, 14 Feb 2026 10:00:00 +0000\n"
+        "Message-Id: <abc123@example.com>\n"
+    )
+    mock_run = Mock(return_value=raw_headers)
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args(id=123, json=True, raw=False)
+    cmd_headers(args)
+
+    captured = capsys.readouterr()
+    assert '"From"' in captured.out
+    assert '"Subject"' in captured.out
+    assert "Test Subject" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_rules (system.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_rules_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_rules lists mail rules."""
+    from my_cli.commands.mail.system import cmd_rules
+
+    mock_run = Mock(return_value=(
+        f"Move Newsletters{chr(0x1F)}true\n"
+        f"Archive Old Mail{chr(0x1F)}false\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args(json=False, action=None, rule_name=None)
+    cmd_rules(args)
+
+    captured = capsys.readouterr()
+    assert "Mail Rules:" in captured.out
+    assert "[ON] Move Newsletters" in captured.out
+    assert "[OFF] Archive Old Mail" in captured.out
+
+
+def test_cmd_rules_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_rules --json returns JSON array."""
+    from my_cli.commands.mail.system import cmd_rules
+
+    mock_run = Mock(return_value=(
+        f"Move Newsletters{chr(0x1F)}true\n"
+        f"Archive Old Mail{chr(0x1F)}false\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+
+    args = mock_args(json=True, action=None, rule_name=None)
+    cmd_rules(args)
+
+    captured = capsys.readouterr()
+    assert '"name": "Move Newsletters"' in captured.out
+    assert '"enabled": true' in captured.out
+    assert '"enabled": false' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_attachments (attachments.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_attachments_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_attachments lists message attachments."""
+    from my_cli.commands.mail.attachments import cmd_attachments
+
+    mock_run = Mock(return_value=(
+        "Test Subject\n"
+        "report.pdf\n"
+        "invoice.xlsx\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+
+    args = mock_args(id=123, json=False)
+    cmd_attachments(args)
+
+    captured = capsys.readouterr()
+    assert "Attachments in" in captured.out
+    assert "report.pdf" in captured.out
+    assert "invoice.xlsx" in captured.out
+
+
+def test_cmd_attachments_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_attachments --json returns JSON."""
+    from my_cli.commands.mail.attachments import cmd_attachments
+
+    mock_run = Mock(return_value=(
+        "Test Subject\n"
+        "document.pdf\n"
+    ))
+    monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+
+    args = mock_args(id=123, json=True)
+    cmd_attachments(args)
+
+    captured = capsys.readouterr()
+    assert '"subject": "Test Subject"' in captured.out
+    assert '"attachments":' in captured.out
+    assert "document.pdf" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# cmd_context (ai.py)
+# ---------------------------------------------------------------------------
+
+def test_cmd_context_basic(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_context shows message with thread history."""
+    from my_cli.commands.mail.ai import cmd_context
+
+    # run() called twice: once for main message, once for thread
+    mock_run = Mock(side_effect=[
+        f"Context Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Main message body.",
+        "",  # empty thread
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(id=123, json=False, limit=50, all_accounts=False)
+    cmd_context(args)
+
+    captured = capsys.readouterr()
+    assert "=== Message ===" in captured.out
+    assert "Context Subject" in captured.out
+    assert "sender@example.com" in captured.out
+    assert "Main message body." in captured.out
+
+
+def test_cmd_context_json(monkeypatch, mock_args, capsys):
+    """Smoke test: cmd_context --json returns JSON with message and thread."""
+    from my_cli.commands.mail.ai import cmd_context
+
+    from my_cli.config import RECORD_SEPARATOR
+    thread_entry = (
+        f"200{chr(0x1F)}Re: Context Subject{chr(0x1F)}other@example.com"
+        f"{chr(0x1F)}Tue Feb 15 2026{chr(0x1F)}Previous reply body."
+    )
+    mock_run = Mock(side_effect=[
+        f"Context Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Main body.",
+        thread_entry + RECORD_SEPARATOR,
+    ])
+    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+
+    args = mock_args(id=123, json=True, limit=50, all_accounts=False)
+    cmd_context(args)
+
+    captured = capsys.readouterr()
+    assert '"message":' in captured.out
+    assert '"thread":' in captured.out
+    assert '"subject": "Context Subject"' in captured.out

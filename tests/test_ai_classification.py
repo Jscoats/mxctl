@@ -4,6 +4,9 @@ These tests focus on the classification logic and data processing,
 not the full AppleScript execution pipeline.
 """
 
+import argparse
+from unittest.mock import Mock
+
 from my_cli.config import FIELD_SEPARATOR
 from my_cli.util.mail_helpers import normalize_subject
 
@@ -37,13 +40,6 @@ class TestTriageCategorizationLogic:
                 f"Sender '{sender}' should be "
                 f"{'notification' if expected_is_notification else 'person'}"
             )
-
-    def test_flagged_status_boolean_parsing(self):
-        """Test parsing flagged status from AppleScript output."""
-        assert "true".lower() == "true"
-        assert "false".lower() == "false"
-        assert "True".lower() == "true"
-        assert "FALSE".lower() == "false"
 
     def test_sender_name_extraction(self):
         """Test extraction of sender name from full sender field."""
@@ -213,59 +209,130 @@ class TestStringTruncation:
         assert "..." in truncated
 
 
-class TestDataStructures:
-    """Test data structure handling in AI commands."""
+class TestCmdSummary:
+    """Smoke tests for cmd_summary in ai.py."""
 
-    def test_dict_with_list_values(self):
-        """Test grouping messages into dict with lists."""
-        from collections import defaultdict
+    def test_summary_basic(self, monkeypatch, capsys):
+        """cmd_summary displays unread messages in concise format."""
+        from my_cli.commands.mail.ai import cmd_summary
 
-        threads = defaultdict(list)
-        threads["project"].append({"id": 1, "subject": "Project"})
-        threads["project"].append({"id": 2, "subject": "Re: Project"})
-        threads["meeting"].append({"id": 3, "subject": "Meeting"})
+        mock_run = Mock(return_value=(
+            f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@test.com{FIELD_SEPARATOR}2026-01-01\n"
+            f"iCloud{FIELD_SEPARATOR}124{FIELD_SEPARATOR}Another Subject{FIELD_SEPARATOR}other@test.com{FIELD_SEPARATOR}2026-01-02\n"
+        ))
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=20, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
 
-        assert len(threads) == 2
-        assert len(threads["project"]) == 2
-        assert len(threads["meeting"]) == 1
+        args = argparse.Namespace(account="iCloud", json=False)
+        cmd_summary(args)
 
-    def test_sorting_by_list_length(self):
-        """Test sorting threads by number of messages."""
-        threads = {
-            "small": [{"id": 1}],
-            "large": [{"id": 2}, {"id": 3}, {"id": 4}],
-            "medium": [{"id": 5}, {"id": 6}],
-        }
+        out = capsys.readouterr().out
+        assert "2 unread:" in out
+        assert "[123]" in out
+        assert "Test Subject" in out
 
-        sorted_threads = sorted(threads.items(), key=lambda x: -len(x[1]))
+    def test_summary_json(self, monkeypatch, capsys):
+        """cmd_summary --json returns JSON array of unread messages."""
+        from my_cli.commands.mail.ai import cmd_summary
 
-        assert sorted_threads[0][0] == "large"
-        assert sorted_threads[1][0] == "medium"
-        assert sorted_threads[2][0] == "small"
+        mock_run = Mock(return_value=(
+            f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@test.com{FIELD_SEPARATOR}2026-01-01\n"
+        ))
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=20, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
+
+        args = argparse.Namespace(account="iCloud", json=True)
+        cmd_summary(args)
+
+        out = capsys.readouterr().out
+        assert '"id": 123' in out
+        assert '"subject": "Test Subject"' in out
+
+    def test_summary_empty(self, monkeypatch, capsys):
+        """cmd_summary handles no unread messages gracefully."""
+        from my_cli.commands.mail.ai import cmd_summary
+
+        mock_run = Mock(return_value="")
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=20, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
+
+        args = argparse.Namespace(account="iCloud", json=False)
+        cmd_summary(args)
+
+        out = capsys.readouterr().out
+        assert "No unread" in out
 
 
-class TestEmptyInputHandling:
-    """Test handling of empty or missing data."""
+class TestCmdTriage:
+    """Smoke tests for cmd_triage in ai.py."""
 
-    def test_empty_string_split(self):
-        """Test splitting empty string."""
-        result = "".strip().split("\n")
-        # Empty string splits to ['']
-        filtered = [line for line in result if line.strip()]
-        assert len(filtered) == 0
+    def test_triage_basic(self, monkeypatch, capsys):
+        """cmd_triage groups unread messages by category."""
+        from my_cli.commands.mail.ai import cmd_triage
 
-    def test_blank_lines_filtered(self):
-        """Test filtering blank lines from output."""
-        output = "line1\n\nline2\n   \nline3"
-        lines = [line for line in output.split("\n") if line.strip()]
+        mock_run = Mock(return_value=(
+            f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Flagged Message{FIELD_SEPARATOR}person@ex.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}true\n"
+            f"iCloud{FIELD_SEPARATOR}124{FIELD_SEPARATOR}Personal Note{FIELD_SEPARATOR}friend@personal.com{FIELD_SEPARATOR}2026-01-02{FIELD_SEPARATOR}false\n"
+            f"iCloud{FIELD_SEPARATOR}125{FIELD_SEPARATOR}Platform Alert{FIELD_SEPARATOR}noreply@service.com{FIELD_SEPARATOR}2026-01-03{FIELD_SEPARATOR}false\n"
+        ))
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=30, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
 
-        assert len(lines) == 3
-        assert lines == ["line1", "line2", "line3"]
+        args = argparse.Namespace(account=None, json=False)
+        cmd_triage(args)
 
-    def test_empty_list_handling(self):
-        """Test handling empty message lists."""
-        messages = []
-        count = len(messages)
+        out = capsys.readouterr().out
+        assert "Triage (3 unread):" in out
+        assert "FLAGGED (1):" in out
+        assert "PEOPLE (1):" in out
+        assert "NOTIFICATIONS (1):" in out
 
-        assert count == 0
-        # Should handle gracefully without crashing
+    def test_triage_json(self, monkeypatch, capsys):
+        """cmd_triage --json returns categorized JSON with flagged/people/notifications keys."""
+        from my_cli.commands.mail.ai import cmd_triage
+
+        mock_run = Mock(return_value=(
+            f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@test.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}false\n"
+        ))
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=30, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
+
+        args = argparse.Namespace(account=None, json=True)
+        cmd_triage(args)
+
+        out = capsys.readouterr().out
+        assert '"flagged":' in out
+        assert '"people":' in out
+        assert '"notifications":' in out
+
+    def test_triage_empty(self, monkeypatch, capsys):
+        """cmd_triage handles empty inbox gracefully."""
+        from my_cli.commands.mail.ai import cmd_triage
+
+        mock_run = Mock(return_value="")
+        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr(
+            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            lambda inner_ops, cap=30, account=None: 'tell application "Mail"\nset output to ""\nend tell',
+        )
+
+        args = argparse.Namespace(account=None, json=False)
+        cmd_triage(args)
+
+        out = capsys.readouterr().out
+        assert "No unread" in out

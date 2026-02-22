@@ -2,7 +2,7 @@
 
 import json
 from argparse import Namespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
@@ -154,3 +154,95 @@ class TestBatchDeleteEffectiveCount:
 
         out = capsys.readouterr().out
         assert "42" in out  # effective_count = total = 42
+
+
+# ---------------------------------------------------------------------------
+# todoist_integration.py: cmd_to_todoist
+# ---------------------------------------------------------------------------
+
+class TestCmdToTodoist:
+    def test_to_todoist_missing_token_dies(self, monkeypatch):
+        """Test that missing Todoist API token causes SystemExit."""
+        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+
+        monkeypatch.setattr(
+            "my_cli.commands.mail.todoist_integration.resolve_message_context",
+            lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
+        )
+        monkeypatch.setattr(
+            "my_cli.commands.mail.todoist_integration.get_config",
+            lambda: {},  # no todoist_api_token
+        )
+
+        args = _make_args(id=42, project=None, priority=1, due=None)
+        with pytest.raises(SystemExit):
+            cmd_to_todoist(args)
+
+    def test_to_todoist_happy_path(self, monkeypatch, capsys):
+        """Test that cmd_to_todoist creates a task via the API."""
+        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from my_cli.config import FIELD_SEPARATOR
+
+        monkeypatch.setattr(
+            "my_cli.commands.mail.todoist_integration.resolve_message_context",
+            lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
+        )
+        monkeypatch.setattr(
+            "my_cli.commands.mail.todoist_integration.get_config",
+            lambda: {"todoist_api_token": "test-token-123"},
+        )
+
+        # Mock AppleScript run to return message data
+        mock_run = Mock(
+            return_value=f"Test Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}2026-01-15"
+        )
+        monkeypatch.setattr("my_cli.commands.mail.todoist_integration.run", mock_run)
+
+        # Mock the urllib HTTP call
+        fake_response_data = {"id": "task-999", "content": "Test Subject", "url": "https://todoist.com/tasks/999"}
+        fake_response = MagicMock()
+        fake_response.__enter__ = lambda s: s
+        fake_response.__exit__ = Mock(return_value=False)
+        fake_response.read.return_value = json.dumps(fake_response_data).encode("utf-8")
+
+        with patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen", return_value=fake_response):
+            args = _make_args(id=42, project=None, priority=1, due=None)
+            cmd_to_todoist(args)
+
+        out = capsys.readouterr().out
+        assert "Test Subject" in out
+        assert "Created Todoist task" in out
+
+
+# ---------------------------------------------------------------------------
+# actions.py: cmd_unsubscribe
+# ---------------------------------------------------------------------------
+
+class TestCmdUnsubscribe:
+    def test_unsubscribe_dry_run_shows_list_unsubscribe_url(self, monkeypatch, capsys):
+        """Test that --dry-run shows the List-Unsubscribe URL from headers."""
+        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from my_cli.config import FIELD_SEPARATOR
+
+        monkeypatch.setattr(
+            "my_cli.commands.mail.actions.resolve_message_context",
+            lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
+        )
+
+        # AppleScript returns subject + raw headers containing List-Unsubscribe
+        unsub_url = "https://example.com/unsubscribe?token=abc123"
+        raw_headers = (
+            f"List-Unsubscribe: <{unsub_url}>\n"
+            "From: newsletter@example.com\n"
+        )
+        mock_run = Mock(
+            return_value=f"Newsletter Subject{FIELD_SEPARATOR}HEADER_SPLIT{FIELD_SEPARATOR}{raw_headers}"
+        )
+        monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+
+        args = _make_args(id=99, dry_run=True, open=False)
+        cmd_unsubscribe(args)
+
+        out = capsys.readouterr().out
+        assert unsub_url in out
+        assert "HTTPS" in out or "https" in out.lower()
