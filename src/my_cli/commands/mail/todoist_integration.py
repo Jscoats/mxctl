@@ -52,7 +52,7 @@ def cmd_to_todoist(args) -> None:
     end tell
     """
 
-    result = run(script)
+    result = run(script, timeout=APPLESCRIPT_TIMEOUT_SHORT)
     parts = result.split(FIELD_SEPARATOR)
     if len(parts) < 3:
         die(f"Failed to read message {message_id}.")
@@ -63,13 +63,15 @@ def cmd_to_todoist(args) -> None:
     project_id = None
     if project:
         projects_req = urllib.request.Request(
-            "https://api.todoist.com/rest/v2/projects",
+            "https://api.todoist.com/api/v1/projects",
             headers={"Authorization": f"Bearer {token}"},
             method="GET",
         )
         try:
             with urllib.request.urlopen(projects_req, context=ssl_context, timeout=APPLESCRIPT_TIMEOUT_SHORT) as resp:
-                projects = json.loads(resp.read().decode("utf-8"))
+                projects_data = json.loads(resp.read().decode("utf-8"))
+            # API v1 returns paginated {"results": [...], "next_cursor": ...}
+            projects = projects_data.get("results", projects_data) if isinstance(projects_data, dict) else projects_data
             match = next((p for p in projects if p.get("name", "").lower() == project.lower()), None)
             if match is None:
                 die(f"Todoist project '{project}' not found. Check the name and try again.")
@@ -95,7 +97,7 @@ def cmd_to_todoist(args) -> None:
         task_data["due_string"] = due
 
     # Make request to Todoist API
-    url = "https://api.todoist.com/rest/v2/tasks"
+    url = "https://api.todoist.com/api/v1/tasks"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",

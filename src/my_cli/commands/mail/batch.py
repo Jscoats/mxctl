@@ -50,7 +50,7 @@ def cmd_batch_read(args) -> None:
     log_fence_operation("batch-read")
     format_output(args, f"Marked {count} messages as read in {mailbox} [{account}] (limit: {limit}).",
                   json_data={"mailbox": mailbox, "account": account, "marked_read": count, "limit": limit})
-    print("Note: batch-read/batch-flag cannot be undone. Use --limit to cap scope (default: 25).", file=sys.stderr)
+    print(f"Note: batch-read operations are not tracked in undo history. Use --limit N to cap scope (current: {limit} messages).", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ def cmd_batch_flag(args) -> None:
     log_fence_operation("batch-flag")
     format_output(args, f"Flagged {count} messages from '{sender}' in account '{account}' (limit: {limit}).",
                   json_data={"sender": sender, "account": account, "flagged": count, "limit": limit})
-    print("Note: batch-read/batch-flag cannot be undone. Use --limit to cap scope (default: 25).", file=sys.stderr)
+    print(f"Note: batch-flag operations are not tracked in undo history. Use --limit N to cap scope (current: {limit} messages).", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------

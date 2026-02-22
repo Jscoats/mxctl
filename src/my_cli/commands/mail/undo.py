@@ -118,16 +118,20 @@ def cmd_undo_list(args) -> None:
     # Build text output
     text = f"Recent batch operations ({len(operations)}):"
     for i, op in enumerate(reversed(operations), 1):
-        text += f"\n{i}. [{op['timestamp']}] {op['operation']}"
-        if op.get("sender"):
-            text += f" from {op['sender']}"
-        if op.get("source_mailbox"):
-            text += f" from {op['source_mailbox']}"
-        if op.get("dest_mailbox"):
-            text += f" to {op['dest_mailbox']}"
-        if op.get("older_than_days"):
-            text += f" (older than {op['older_than_days']} days)"
-        text += f" — {len(op.get('message_ids', []))} messages"
+        is_fence = op.get("type") == "fence"
+        prefix = "[no undo] " if is_fence else ""
+        ts = op.get("timestamp", "")
+        text += f"\n  {i}. {prefix}{op['operation']} — {ts}"
+        if not is_fence:
+            if op.get("sender"):
+                text += f" from {op['sender']}"
+            if op.get("source_mailbox"):
+                text += f" from {op['source_mailbox']}"
+            if op.get("dest_mailbox"):
+                text += f" to {op['dest_mailbox']}"
+            if op.get("older_than_days"):
+                text += f" (older than {op['older_than_days']} days)"
+            text += f" ({len(op.get('message_ids', []))} messages)"
 
     format_output(args, text, json_data={"operations": list(reversed(operations))})
 
@@ -227,7 +231,12 @@ def cmd_undo(args) -> None:
             moved = int(result) if result.isdigit() else 0
             sender = last_op.get("sender", "unknown sender")
             _save_undo_log(operations)  # commit removal only on success
-            format_output(args, f"Undid batch-move: moved {moved}/{len(message_ids)} messages from '{sender}' back to INBOX from '{dest_mailbox}'.",
+            total = len(message_ids)
+            if moved == 0:
+                msg = f"Nothing to restore (0 of {total} messages found — they may have already been moved or deleted)."
+            else:
+                msg = f"Undid batch-move: moved {moved}/{total} messages from '{sender}' back to INBOX from '{dest_mailbox}'."
+            format_output(args, msg,
                           json_data={
                               "operation": "undo-batch-move",
                               "account": account,
@@ -273,8 +282,12 @@ def cmd_undo(args) -> None:
             result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
             moved = int(result) if result.isdigit() else 0
             sender = last_op.get("sender", "unknown sender")
-            msg = f"Undid batch-delete: moved {moved}/{len(message_ids)} messages from Trash back to '{restore_mailbox}'."
-            if restore_note:
+            total = len(message_ids)
+            if moved == 0:
+                msg = f"Nothing to restore (0 of {total} messages found — they may have already been moved or deleted)."
+            else:
+                msg = f"Undid batch-delete: moved {moved}/{total} messages from Trash back to '{restore_mailbox}'."
+            if restore_note and moved > 0:
                 msg += f" Note: {restore_note}"
             json_result = {
                 "operation": "undo-batch-delete",
