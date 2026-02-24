@@ -9,6 +9,10 @@
 
 **49 commands.** Triage with AI, batch-process newsletters, turn emails into Todoist tasks — all from the terminal. Every command supports `--json` for scripting and AI workflows. Zero external dependencies.
 
+<p align="center">
+  <img src="demo/demo.gif" alt="mxctl demo — inbox, triage, summary, and batch operations" width="700">
+</p>
+
 ## Table of Contents
 
 - [Key Features](#key-features)
@@ -19,6 +23,7 @@
 - [Requirements](#requirements)
 - [Usage Tips](#usage-tips)
 - [Built for AI Workflows](#built-for-ai-workflows)
+- [AI Demos](#ai-demos)
 - [Architecture](#architecture)
 - [Why Not X?](#why-not-x)
 - [Contributing](#contributing)
@@ -323,6 +328,34 @@ mxctl inbox --json | jq '.accounts[].unread_count'
 ```
 
 The CLI is the bridge between Mail.app and whatever tools you use -- AI, scripts, or both.
+
+## AI Demos
+
+These demos show how an AI assistant (like Claude Code) uses mxctl to manage your inbox conversationally. You say what you want in plain English, and the AI picks the right commands, checks before acting, and reports back.
+
+### Inbox triage and drafting
+
+The AI triages your inbox, marks newsletters as read, flags important messages for follow-up, and drafts a reply to your mom -- all from a single request.
+
+<p align="center">
+  <img src="demo/ai-demo.gif" alt="AI assistant triaging inbox, flagging messages, and drafting a reply" width="700">
+</p>
+
+### Bulk sender cleanup
+
+The AI finds your noisiest senders, dry-runs the deletes so you can see what would be removed, then cleans up 60 marketing emails in seconds. Everything is undoable with `mxctl undo`.
+
+<p align="center">
+  <img src="demo/batch-delete-demo.gif" alt="AI assistant finding top spammy senders and batch-deleting 60 messages" width="700">
+</p>
+
+### Newsletter unsubscribe
+
+The AI analyzes which newsletters you actually read vs. ignore, then unsubscribes from the ones with 0% open rate while leaving the ones you engage with. One-click unsubscribe when the header supports it, browser fallback when it doesn't.
+
+<p align="center">
+  <img src="demo/unsubscribe-demo.gif" alt="AI assistant analyzing newsletter read rates and unsubscribing from unread ones" width="700">
+</p>
 
 ## Architecture
 

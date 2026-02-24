@@ -32,5 +32,11 @@ REDDIT_LAUNCH.md
 # Local development instructions (personal, not for public repo)
 CLAUDE.md
 
+# Demo build artifacts (GIFs are committed, scripts are not)
+demo/*.cast
+demo/*.sh
+demo/bin/
+.coverage
+
 # Lock files
 uv.lock
