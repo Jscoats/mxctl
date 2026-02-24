@@ -220,7 +220,7 @@ Supported translations: `Trash`, `Spam`/`Junk`, `Sent`/`Sent Messages`, `Archive
 Turn any email into a Todoist task without leaving the terminal. The task includes the email subject, sender, and a link back to the message.
 
 ```bash
-# Set up during init, or add manually to ~/.config/my/config.json
+# Set up during init, or add manually to ~/.config/mxctl/config.json
 mxctl init  # step 3 prompts for your Todoist API token
 
 # Send an email to Todoist

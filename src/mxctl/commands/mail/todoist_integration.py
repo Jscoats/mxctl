@@ -32,11 +32,11 @@ def cmd_to_todoist(args) -> None:
     cfg = get_config()
     token = cfg.get("todoist_api_token")
     if not token:
-        die("Todoist API token not configured. Add 'todoist_api_token' to ~/.config/my/config.json")
+        die("Todoist API token not configured. Add 'todoist_api_token' to ~/.config/mxctl/config.json")
     # Validate token format before making any network calls (prevents silent hangs
     # caused by malformed auth headers or non-string token values)
     if not isinstance(token, str) or not token.strip():
-        die("Todoist API token is invalid. Check 'todoist_api_token' in ~/.config/my/config.json")
+        die("Todoist API token is invalid. Check 'todoist_api_token' in ~/.config/mxctl/config.json")
 
     ssl_context = ssl.create_default_context(cafile="/etc/ssl/cert.pem")
 

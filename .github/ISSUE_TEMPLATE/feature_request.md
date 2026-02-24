@@ -15,7 +15,7 @@ assignees: ''
 ## Example Usage
 <!-- Show how you envision using this feature -->
 ```bash
-my mail ...
+mxctl ...
 ```
 
 ## Alternatives Considered

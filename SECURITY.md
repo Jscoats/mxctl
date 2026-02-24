@@ -8,7 +8,7 @@ If you discover a security vulnerability in this project, please report it respo
 
 Instead, please email a description of the vulnerability to the project maintainer via GitHub's private vulnerability reporting feature:
 
-1. Go to the [Security tab](https://github.com/Jscoats/my-apple-mail-cli/security)
+1. Go to the [Security tab](https://github.com/Jscoats/mxctl/security)
 2. Click "Report a vulnerability"
 3. Provide details about the issue
 
