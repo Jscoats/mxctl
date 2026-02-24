@@ -10,7 +10,7 @@ assignees: ''
 <!-- A clear description of what the bug is -->
 
 ## Steps to Reproduce
-1. Run command: `my mail ...`
+1. Run command: `mxctl ...`
 2. See error: ...
 3. ...
 
@@ -23,7 +23,7 @@ assignees: ''
 ## Environment
 - macOS version:
 - Python version: (`python3 --version`)
-- my-apple-mail-cli version:
+- mxctl version:
 - Mail.app version:
 
 ## Error Messages

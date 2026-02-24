@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from my_cli.config import (
+from mxctl.config import (
     DEFAULT_DIGEST_LIMIT,
     DEFAULT_MAILBOX,
     APPLESCRIPT_TIMEOUT_LONG,
@@ -13,10 +13,10 @@ from my_cli.config import (
     resolve_account,
     save_message_aliases,
 )
-from my_cli.util.applescript import escape, run, validate_msg_id
-from my_cli.util.applescript_templates import inbox_iterator_all_accounts
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import extract_display_name, extract_email, normalize_subject, parse_message_line
+from mxctl.util.applescript import escape, run, validate_msg_id
+from mxctl.util.applescript_templates import inbox_iterator_all_accounts
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import extract_display_name, extract_email, normalize_subject, parse_message_line
 
 
 # ---------------------------------------------------------------------------

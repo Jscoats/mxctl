@@ -3,27 +3,27 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "my-apple-mail-cli"
-version = "0.2.0"
-description = "A comprehensive command-line interface for Apple Mail on macOS"
+name = "mxctl"
+version = "0.3.0"
+description = "Apple Mail from your terminal"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{name = "Jscoats"}]
 
 [project.urls]
-Homepage = "https://github.com/Jscoats/my-apple-mail-cli"
-Repository = "https://github.com/Jscoats/my-apple-mail-cli"
-Issues = "https://github.com/Jscoats/my-apple-mail-cli/issues"
+Homepage = "https://github.com/Jscoats/mxctl"
+Repository = "https://github.com/Jscoats/mxctl"
+Issues = "https://github.com/Jscoats/mxctl/issues"
 
 [project.optional-dependencies]
 dev = ["pytest"]
 
 [project.scripts]
-my = "my_cli.main:main"
+mxctl = "mxctl.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/my_cli"]
+packages = ["src/mxctl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

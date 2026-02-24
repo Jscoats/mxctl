@@ -4,7 +4,7 @@ from argparse import Namespace
 
 import pytest
 
-from my_cli.util.mail_helpers import resolve_message_context
+from mxctl.util.mail_helpers import resolve_message_context
 
 
 def test_resolve_message_context_with_account(monkeypatch):
@@ -15,7 +15,7 @@ def test_resolve_message_context_with_account(monkeypatch):
     def mock_resolve_account(account):
         return account
 
-    monkeypatch.setattr("my_cli.util.mail_helpers.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.util.mail_helpers.resolve_account", mock_resolve_account)
 
     account, mailbox, acct_escaped, mb_escaped = resolve_message_context(args)
 
@@ -32,7 +32,7 @@ def test_resolve_message_context_with_custom_mailbox(monkeypatch):
     def mock_resolve_account(account):
         return account
 
-    monkeypatch.setattr("my_cli.util.mail_helpers.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.util.mail_helpers.resolve_account", mock_resolve_account)
 
     account, mailbox, acct_escaped, mb_escaped = resolve_message_context(args)
 
@@ -49,7 +49,7 @@ def test_resolve_message_context_no_account(monkeypatch):
     def mock_resolve_account(account):
         return None
 
-    monkeypatch.setattr("my_cli.util.mail_helpers.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.util.mail_helpers.resolve_account", mock_resolve_account)
 
     with pytest.raises(SystemExit):
         resolve_message_context(args)
@@ -62,7 +62,7 @@ def test_resolve_message_context_escapes_quotes(monkeypatch):
     def mock_resolve_account(account):
         return account
 
-    monkeypatch.setattr("my_cli.util.mail_helpers.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.util.mail_helpers.resolve_account", mock_resolve_account)
 
     account, mailbox, acct_escaped, mb_escaped = resolve_message_context(args)
 
@@ -78,7 +78,7 @@ def test_resolve_message_context_uses_default_mailbox(monkeypatch):
     def mock_resolve_account(account):
         return account
 
-    monkeypatch.setattr("my_cli.util.mail_helpers.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.util.mail_helpers.resolve_account", mock_resolve_account)
 
     account, mailbox, acct_escaped, mb_escaped = resolve_message_context(args)
 

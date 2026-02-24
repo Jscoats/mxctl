@@ -1,6 +1,6 @@
 """Tests for mail_helpers module."""
 
-from my_cli.util.mail_helpers import (
+from mxctl.util.mail_helpers import (
     extract_email,
     normalize_subject,
     parse_email_headers,

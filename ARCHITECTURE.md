@@ -1,19 +1,19 @@
 # Architecture
 
-This document explains the high-level design of my-apple-mail-cli for contributors.
+This document explains the high-level design of mxctl for contributors.
 
 ## Overview
 
-my-apple-mail-cli is a Python CLI that controls Apple Mail via AppleScript. It uses zero external runtime dependencies — everything is built on Python's standard library.
+mxctl is a Python CLI that controls Apple Mail via AppleScript. It uses zero external runtime dependencies -- everything is built on Python's standard library.
 
 ```
-User → CLI (argparse) → Command Module → AppleScript Bridge → Mail.app
+User -> CLI (argparse) -> Command Module -> AppleScript Bridge -> Mail.app
 ```
 
 ## Directory Structure
 
 ```
-src/my_cli/
+src/mxctl/
 ├── main.py                        # Top-level argparse router
 ├── config.py                      # Constants, account resolution, validation
 ├── util/
@@ -23,33 +23,33 @@ src/my_cli/
 │   ├── mail_helpers.py           # resolve_message_context(), normalize_subject()
 │   └── dates.py                  # parse_date(), to_applescript_date()
 └── commands/
-    └── mail/                      # All mail subcommands (16 modules)
-        ├── __init__.py            # Imports and wires all registered command modules
-        ├── accounts.py            # inbox, accounts, mailboxes
-        ├── messages.py            # list, read, search
-        ├── actions.py             # mark-read, mark-unread, flag, unflag, move, delete
-        ├── compose.py             # draft (supports --template)
-        ├── attachments.py         # attachments, save-attachment
-        ├── manage.py              # create-mailbox, delete-mailbox, empty-trash
-        ├── batch.py               # batch-read, batch-flag, batch-move, batch-delete
-        ├── analytics.py           # stats, top-senders, digest, show-flagged
-        ├── setup.py               # init (first-time setup wizard)
-        ├── system.py              # check, headers, rules, junk, not-junk
-        ├── composite.py           # export, thread, reply, forward
-        ├── ai.py                  # summary, triage, context, find-related
-        ├── templates.py           # templates list/create/show/delete
-        ├── todoist_integration.py # to-todoist
-        ├── inbox_tools.py         # process-inbox, clean-newsletters, weekly-review
-        └── undo.py                # undo, undo --list
+    └── mail/
+        ├── __init__.py                # Package marker
+        ├── accounts.py                # inbox, accounts, mailboxes
+        ├── messages.py                # list, read, search
+        ├── actions.py                 # mark-read, mark-unread, flag, unflag, move, delete
+        ├── compose.py                 # draft (supports --template)
+        ├── attachments.py             # attachments, save-attachment
+        ├── manage.py                  # create-mailbox, delete-mailbox, empty-trash
+        ├── batch.py                   # batch-read, batch-flag, batch-move, batch-delete
+        ├── analytics.py               # stats, top-senders, digest, show-flagged
+        ├── setup.py                   # init (first-time setup wizard)
+        ├── system.py                  # check, headers, rules, junk, not-junk
+        ├── composite.py               # export, thread, reply, forward
+        ├── ai.py                      # summary, triage, context, find-related
+        ├── templates.py               # templates list/create/show/delete
+        ├── todoist_integration.py     # to-todoist
+        ├── inbox_tools.py             # process-inbox, clean-newsletters, weekly-review
+        └── undo.py                    # undo, undo --list
 ```
 
 ## AppleScript Bridge
 
 All Mail.app interaction goes through `util/applescript.py`, which wraps `osascript -e`. This module provides:
 
-- **`run(script, timeout=30)`** — Execute an AppleScript string and return stdout
-- **`escape(string)`** — Sanitize strings for safe embedding in AppleScript
-- **`sanitize_path(path)`** — Expand and resolve file paths
+- **`run(script, timeout=30)`** -- Execute an AppleScript string and return stdout
+- **`escape(string)`** -- Sanitize strings for safe embedding in AppleScript
+- **`sanitize_path(path)`** -- Expand and resolve file paths
 
 AppleScript returns multi-field data using `FIELD_SEPARATOR` (ASCII Unit Separator `\x1f`) and `RECORD_SEPARATOR` (ASCII Record Separator `\x1e`), defined in `config.py`. Command modules split on these to parse structured responses from Mail.app.
 
@@ -59,15 +59,15 @@ Reusable AppleScript patterns (inbox iteration, message lookup) live in `applesc
 
 When a command needs a mail account, resolution follows this priority:
 
-1. **Explicit flag** — `-a "Account Name"` on the command line
-2. **Config default** — `default_account` in `~/.config/my/config.json`
-3. **Last-used** — Most recently used account stored in `state.json`
+1. **Explicit flag** -- `-a "Account Name"` on the command line
+2. **Config default** -- `default_account` in `~/.config/mxctl/config.json`
+3. **Last-used** -- Most recently used account stored in `state.json`
 
 This is implemented in `config.py:resolve_account()` and used by `util/mail_helpers.py:resolve_message_context()`.
 
 ## Command Registration
 
-Each command module in `commands/mail/` exports a `register(subparsers)` function that adds its commands to the argparse tree. The `commands/mail/__init__.py` router explicitly imports and calls all `register()` functions.
+Each command module in `commands/mail/` exports a `register(subparsers)` function that adds its commands to the argparse tree. `main.py` imports and calls all `register()` functions directly.
 
 To add a new command:
 
@@ -77,7 +77,7 @@ To add a new command:
 
 ## Output Convention
 
-Every command supports `--json` for structured output. The `format_output(args, text, json_data=...)` function in `util/formatting.py` handles routing — it checks `args.json` and outputs either human-readable text or JSON accordingly.
+Every command supports `--json` for structured output. The `format_output(args, text, json_data=...)` function in `util/formatting.py` handles routing -- it checks `args.json` and outputs either human-readable text or JSON accordingly.
 
 ## Batch Operations & Undo
 

@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from my_cli.commands.mail.manage import cmd_empty_trash, cmd_create_mailbox, cmd_delete_mailbox
+from mxctl.commands.mail.manage import cmd_empty_trash, cmd_create_mailbox, cmd_delete_mailbox
 
 
 def test_cmd_empty_trash_single_account(monkeypatch, capsys):
@@ -15,15 +15,15 @@ def test_cmd_empty_trash_single_account(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return message count
     mock_run = Mock(return_value="5")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     # Mock subprocess.run for the UI script
     mock_subprocess = Mock(return_value=Mock(returncode=0, stderr=""))
-    monkeypatch.setattr("my_cli.commands.mail.manage.subprocess.run", mock_subprocess)
+    monkeypatch.setattr("mxctl.commands.mail.manage.subprocess.run", mock_subprocess)
 
     args = Namespace(account="iCloud", all=False, json=False)
     cmd_empty_trash(args)
@@ -38,11 +38,11 @@ def test_cmd_empty_trash_all_accounts(monkeypatch, capsys):
     def mock_resolve_account(account):
         return None
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock subprocess.run for the UI script
     mock_subprocess = Mock(return_value=Mock(returncode=0, stderr=""))
-    monkeypatch.setattr("my_cli.commands.mail.manage.subprocess.run", mock_subprocess)
+    monkeypatch.setattr("mxctl.commands.mail.manage.subprocess.run", mock_subprocess)
 
     args = Namespace(account=None, all=True, json=False)
     cmd_empty_trash(args)
@@ -57,11 +57,11 @@ def test_cmd_empty_trash_already_empty(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return 0 messages
     mock_run = Mock(return_value="0")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     args = Namespace(account="iCloud", all=False, json=False)
     cmd_empty_trash(args)
@@ -75,15 +75,15 @@ def test_cmd_empty_trash_json_output(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return message count
     mock_run = Mock(return_value="3")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     # Mock subprocess.run for the UI script
     mock_subprocess = Mock(return_value=Mock(returncode=0, stderr=""))
-    monkeypatch.setattr("my_cli.commands.mail.manage.subprocess.run", mock_subprocess)
+    monkeypatch.setattr("mxctl.commands.mail.manage.subprocess.run", mock_subprocess)
 
     args = Namespace(account="iCloud", all=False, json=True)
     cmd_empty_trash(args)
@@ -99,11 +99,11 @@ def test_cmd_empty_trash_json_already_empty(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return 0 messages
     mock_run = Mock(return_value="0")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     args = Namespace(account="iCloud", all=False, json=True)
     cmd_empty_trash(args)
@@ -119,7 +119,7 @@ def test_cmd_empty_trash_no_account_no_all_flag(monkeypatch):
     def mock_resolve_account(account):
         return None
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     args = Namespace(account=None, all=False, json=False)
 
@@ -132,18 +132,18 @@ def test_cmd_empty_trash_menu_not_found(monkeypatch):
     def mock_resolve_account(account):
         return "InvalidAccount"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return message count
     mock_run = Mock(return_value="5")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     # Mock subprocess.run to fail with "Can't get menu item"
     mock_subprocess = Mock(return_value=Mock(
         returncode=1,
         stderr="Can't get menu item InvalidAccount… of menu 1"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.manage.subprocess.run", mock_subprocess)
+    monkeypatch.setattr("mxctl.commands.mail.manage.subprocess.run", mock_subprocess)
 
     args = Namespace(account="InvalidAccount", all=False, json=False)
 
@@ -156,17 +156,17 @@ def test_cmd_empty_trash_timeout(monkeypatch):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return message count
     mock_run = Mock(return_value="5")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     # Mock subprocess.run to raise TimeoutExpired
     def mock_subprocess_timeout(*args, **kwargs):
         raise subprocess.TimeoutExpired(cmd="osascript", timeout=15)
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.subprocess.run", mock_subprocess_timeout)
+    monkeypatch.setattr("mxctl.commands.mail.manage.subprocess.run", mock_subprocess_timeout)
 
     args = Namespace(account="iCloud", all=False, json=False)
 
@@ -179,11 +179,11 @@ def test_cmd_empty_trash_nonzero_message_count_handling(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to return non-numeric result
     mock_run = Mock(return_value="error")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     args = Namespace(account="iCloud", all=False, json=False)
     cmd_empty_trash(args)
@@ -198,13 +198,13 @@ def test_cmd_empty_trash_applescript_error_handling(monkeypatch, capsys):
     def mock_resolve_account(account):
         return "iCloud"
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", mock_resolve_account)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", mock_resolve_account)
 
     # Mock the AppleScript run to raise SystemExit (die() was called)
     def mock_run_error(script):
         raise SystemExit(1)
 
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run_error)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run_error)
 
     args = Namespace(account="iCloud", all=False, json=False)
     cmd_empty_trash(args)
@@ -220,10 +220,10 @@ def test_cmd_empty_trash_applescript_error_handling(monkeypatch, capsys):
 
 def test_cmd_create_mailbox_success(monkeypatch, capsys):
     """Test create-mailbox calls run() and reports creation."""
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", lambda _: "iCloud")
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", lambda _: "iCloud")
 
     mock_run = Mock(return_value="created")
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     args = Namespace(account="iCloud", name="MyProject", json=False)
     cmd_create_mailbox(args)
@@ -241,7 +241,7 @@ def test_cmd_create_mailbox_success(monkeypatch, capsys):
 
 def test_cmd_create_mailbox_no_account_dies(monkeypatch):
     """Test create-mailbox exits when no account is resolved."""
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", lambda _: None)
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", lambda _: None)
 
     args = Namespace(account=None, name="MyProject", json=False)
     with pytest.raises(SystemExit):
@@ -254,7 +254,7 @@ def test_cmd_create_mailbox_no_account_dies(monkeypatch):
 
 def test_cmd_delete_mailbox_without_force_dies(monkeypatch):
     """Test delete-mailbox exits without --force flag."""
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", lambda _: "iCloud")
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", lambda _: "iCloud")
 
     args = Namespace(account="iCloud", name="OldMailbox", force=False, json=False)
     with pytest.raises(SystemExit):
@@ -263,11 +263,11 @@ def test_cmd_delete_mailbox_without_force_dies(monkeypatch):
 
 def test_cmd_delete_mailbox_with_force_proceeds(monkeypatch, capsys):
     """Test delete-mailbox proceeds and calls run() when --force is given."""
-    monkeypatch.setattr("my_cli.commands.mail.manage.resolve_account", lambda _: "iCloud")
+    monkeypatch.setattr("mxctl.commands.mail.manage.resolve_account", lambda _: "iCloud")
 
     # First call returns count, second call performs the delete
     mock_run = Mock(side_effect=["3", "deleted"])
-    monkeypatch.setattr("my_cli.commands.mail.manage.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.manage.run", mock_run)
 
     args = Namespace(account="iCloud", name="OldMailbox", force=True, json=False)
     cmd_delete_mailbox(args)

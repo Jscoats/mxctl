@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from my_cli.config import (
+from mxctl.config import (
     DEFAULT_BODY_LENGTH,
     DEFAULT_MESSAGE_LIMIT,
     FIELD_SEPARATOR,
@@ -10,10 +10,10 @@ from my_cli.config import (
     save_message_aliases,
     validate_limit,
 )
-from my_cli.util.applescript import escape, run, validate_msg_id
-from my_cli.util.dates import parse_date, to_applescript_date
-from my_cli.util.formatting import format_output, truncate
-from my_cli.util.mail_helpers import parse_message_line, resolve_mailbox, resolve_message_context
+from mxctl.util.applescript import escape, run, validate_msg_id
+from mxctl.util.dates import parse_date, to_applescript_date
+from mxctl.util.formatting import format_output, truncate
+from mxctl.util.mail_helpers import parse_message_line, resolve_mailbox, resolve_message_context
 
 
 # ---------------------------------------------------------------------------

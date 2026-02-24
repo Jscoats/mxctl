@@ -1,12 +1,12 @@
-# Contributing to my-apple-mail-cli
+# Contributing to mxctl
 
-Thanks for your interest in contributing! 🎉
+Thanks for your interest in contributing!
 
 This project welcomes contributions from the community. Whether you're fixing a bug, adding a feature, or improving documentation, your help is appreciated.
 
-## 🐛 Reporting Bugs
+## Reporting Bugs
 
-Found a bug? Please [open an issue](https://github.com/Jscoats/my-apple-mail-cli/issues/new?template=bug_report.md) with:
+Found a bug? Please [open an issue](https://github.com/Jscoats/mxctl/issues/new?template=bug_report.md) with:
 
 - Clear description of the problem
 - Steps to reproduce
@@ -16,15 +16,15 @@ Found a bug? Please [open an issue](https://github.com/Jscoats/my-apple-mail-cli
 
 **Note:** Please check existing issues first to avoid duplicates.
 
-## 💡 Requesting Features
+## Requesting Features
 
-Have an idea? [Open a feature request](https://github.com/Jscoats/my-apple-mail-cli/issues/new?template=feature_request.md) with:
+Have an idea? [Open a feature request](https://github.com/Jscoats/mxctl/issues/new?template=feature_request.md) with:
 
 - Clear description of the feature
 - Why it would be useful
 - Example usage (if applicable)
 
-## 🔧 Contributing Code
+## Contributing Code
 
 ### Prerequisites
 
@@ -45,10 +45,10 @@ Have an idea? [Open a feature request](https://github.com/Jscoats/my-apple-mail-
 
 ```bash
 # Clone the repo
-git clone https://github.com/Jscoats/my-apple-mail-cli.git
-cd my-apple-mail-cli
+git clone https://github.com/Jscoats/mxctl.git
+cd mxctl
 
-# Install in editable mode (primary — uses uv)
+# Install in editable mode (primary -- uses uv)
 uv tool install -e .          # Install
 uv tool install -e . --force  # Reinstall after changes
 
@@ -65,7 +65,7 @@ pip install -e ".[dev]"
 
 **Follow existing patterns:**
 - Match the style of surrounding code
-- Use existing utilities in `src/my_cli/util/`
+- Use existing utilities in `src/mxctl/util/`
 - Add AppleScript code to `applescript_templates.py` if reusable
 - Keep functions focused and testable
 
@@ -122,7 +122,7 @@ pip install -e ".[dev]"
 - Be patient - reviews may take a few days
 - Be open to feedback and iteration
 
-## 📝 Documentation
+## Documentation
 
 Documentation improvements are always welcome! You can help by:
 
@@ -131,11 +131,11 @@ Documentation improvements are always welcome! You can help by:
 - Improving code comments
 - Writing tutorials or guides
 
-## 🤔 Questions?
+## Questions?
 
 Not sure about something? Open an issue with the `question` label or reach out via GitHub discussions.
 
-## 🙏 Thank You!
+## Thank You!
 
 Every contribution, no matter how small, helps make this project better. Thank you for being part of the community!
 

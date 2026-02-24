@@ -9,11 +9,11 @@ import urllib.parse
 import urllib.request
 import urllib.error
 
-from my_cli.config import APPLESCRIPT_TIMEOUT_SHORT, FIELD_SEPARATOR, resolve_account
-from my_cli.util.applescript import escape, run, validate_msg_id
-from my_cli.util.applescript_templates import set_message_property
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import resolve_mailbox, resolve_message_context, parse_email_headers
+from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT, FIELD_SEPARATOR, resolve_account
+from mxctl.util.applescript import escape, run, validate_msg_id
+from mxctl.util.applescript_templates import set_message_property
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import resolve_mailbox, resolve_message_context, parse_email_headers
 
 
 def _mark_read_status(args, read_status: bool) -> None:
@@ -296,7 +296,7 @@ def cmd_junk(args) -> None:
         if not explicit_account:
             print(
                 "Hint: If this message belongs to another account, use -a ACCOUNT.\n"
-                "      Run `my mail accounts` to see account names.",
+                "      Run `mxctl accounts` to see account names.",
                 file=sys.stderr,
             )
         raise
@@ -432,7 +432,7 @@ def cmd_not_junk(args) -> None:
         # Build a prioritized list of junk folder candidates
         junk_primary = resolve_mailbox(account, "Junk")
         candidates = [junk_primary]
-        from my_cli.config import get_gmail_accounts
+        from mxctl.config import get_gmail_accounts
         if account in get_gmail_accounts():
             if "[Gmail]/Spam" not in candidates:
                 candidates.append("[Gmail]/Spam")

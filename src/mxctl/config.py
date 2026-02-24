@@ -1,9 +1,9 @@
-"""Configuration management for the `my` CLI.
+"""Configuration management for mxctl.
 
 Three-tier account resolution (most specific wins):
 1. Explicit --account flag
-2. Default in ~/.config/my/config.json -> {"mail": {"default_account": "iCloud"}}
-3. Last-used account saved in ~/.config/my/state.json -> {"mail": {"last_account": "iCloud"}}
+2. Default in ~/.config/mxctl/config.json -> {"mail": {"default_account": "iCloud"}}
+3. Last-used account saved in ~/.config/mxctl/state.json -> {"mail": {"last_account": "iCloud"}}
 
 Migration note: Backward compatibility is maintained. Config lookups check the new
 namespaced format first (e.g., config["mail"]["default_account"]), then fall back
@@ -16,12 +16,14 @@ from __future__ import annotations
 import json
 import os
 import fcntl
+import shutil
 import time
 from contextlib import contextmanager
 
-from my_cli.util.formatting import die
+from mxctl.util.formatting import die
 
-CONFIG_DIR = os.path.expanduser("~/.config/my")
+CONFIG_DIR = os.path.expanduser("~/.config/mxctl")
+_LEGACY_CONFIG_DIR = os.path.expanduser("~/.config/my")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 STATE_FILE = os.path.join(CONFIG_DIR, "state.json")
 TEMPLATES_FILE = os.path.join(CONFIG_DIR, "mail-templates.json")
@@ -54,8 +56,31 @@ NOREPLY_PATTERNS = [
     "updates@", "news@", "info@", "support@", "billing@",
 ]
 
+_migrated: bool = False
+
+
+def _migrate_legacy_config() -> None:
+    """One-time migration from ~/.config/my/ to ~/.config/mxctl/."""
+    global _migrated
+    if _migrated:
+        return
+    _migrated = True
+
+    if os.path.isdir(CONFIG_DIR):
+        return  # Already migrated or fresh install
+    if not os.path.isdir(_LEGACY_CONFIG_DIR):
+        return  # No legacy config to migrate
+
+    import sys
+    shutil.copytree(_LEGACY_CONFIG_DIR, CONFIG_DIR)
+    print(
+        f"Migrated config from {_LEGACY_CONFIG_DIR} to {CONFIG_DIR}",
+        file=sys.stderr,
+    )
+
 
 def _ensure_dir() -> None:
+    _migrate_legacy_config()
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
 
@@ -88,6 +113,7 @@ def file_lock(path: str):
 
 
 def _load_json(path: str) -> dict:
+    _migrate_legacy_config()
     if os.path.isfile(path):
         try:
             with file_lock(path):
@@ -123,12 +149,14 @@ _config_warned: bool = False
 def get_config(required: bool = False, warn: bool = True) -> dict:
     global _config_warned
     if not os.path.isfile(CONFIG_FILE):
+        _migrate_legacy_config()
+    if not os.path.isfile(CONFIG_FILE):
         if required:
-            die("No config found. Run `my mail init` to set up your default account.")
+            die("No config found. Run `mxctl init` to set up your default account.")
         if warn and not _config_warned:
             import sys
             print(
-                "No config found. Run `my mail init` to set up your default account.",
+                "No config found. Run `mxctl init` to set up your default account.",
                 file=sys.stderr,
             )
             _config_warned = True

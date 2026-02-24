@@ -6,8 +6,8 @@ import os
 
 import pytest
 
-from my_cli.config import FIELD_SEPARATOR, validate_limit
-from my_cli.util.mail_helpers import resolve_message_context
+from mxctl.config import FIELD_SEPARATOR, validate_limit
+from mxctl.util.mail_helpers import resolve_message_context
 
 
 class TestResolveMessageContextErrors:
@@ -18,11 +18,11 @@ class TestResolveMessageContextErrors:
         # Mock config dir to ensure no defaults exist
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         args = Namespace(account=None, mailbox=None)
 
@@ -35,11 +35,11 @@ class TestResolveMessageContextErrors:
         # Mock config dir
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         args = Namespace(account="TestAccount", mailbox=None)
         account, mailbox, _, _ = resolve_message_context(args)
@@ -52,11 +52,11 @@ class TestResolveMessageContextErrors:
         # Mock config dir
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         args = Namespace(account='Test"Account', mailbox='Mail\\Box')
         _, _, acct_escaped, mb_escaped = resolve_message_context(args)
@@ -71,13 +71,13 @@ class TestAppleScriptErrorHandling:
 
     def test_applescript_error_propagates_as_system_exit(self, monkeypatch):
         """cmd_batch_move should propagate SystemExit when run() exits due to an AppleScript error."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         # Simulate run() encountering an AppleScript error and calling sys.exit(1)
         def failing_run(script, **kwargs):
             raise SystemExit(1)
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", failing_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", failing_run)
 
         args = Namespace(
             account="iCloud", from_sender="spam@example.com",
@@ -89,15 +89,15 @@ class TestAppleScriptErrorHandling:
 
     def test_cmd_read_with_malformed_applescript_output(self, monkeypatch, capsys):
         """cmd_read should fall back gracefully when run() returns fewer fields than expected."""
-        from my_cli.commands.mail.messages import cmd_read
+        from mxctl.commands.mail.messages import cmd_read
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.messages.resolve_message_context",
+            "mxctl.commands.mail.messages.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
         # Return only 3 fields — far fewer than the 16 cmd_read expects
         malformed_output = f"42{FIELD_SEPARATOR}Subject Only{FIELD_SEPARATOR}sender@example.com"
-        monkeypatch.setattr("my_cli.commands.mail.messages.run", Mock(return_value=malformed_output))
+        monkeypatch.setattr("mxctl.commands.mail.messages.run", Mock(return_value=malformed_output))
 
         args = Namespace(account="iCloud", mailbox="INBOX", id=42, short=False, json=False)
         # Should NOT raise — cmd_read has a graceful fallback for < 16 fields
@@ -109,9 +109,9 @@ class TestAppleScriptErrorHandling:
 
     def test_batch_delete_missing_filter_args_dies(self, monkeypatch):
         """cmd_batch_delete should exit with code 1 when neither --older-than nor --from-sender is given."""
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
 
         args = Namespace(
             account="iCloud", mailbox=None,
@@ -152,12 +152,12 @@ class TestBatchOperationDryRun:
 
     def test_batch_move_dry_run_reports_would_move(self, monkeypatch, capsys):
         """cmd_batch_move with dry_run=True should print 'Would move' without actually moving."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         # First run() call returns the count of matching messages; second should NOT be called.
         mock_run = Mock(return_value="7")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = Namespace(
             account="iCloud", from_sender="newsletter@example.com",
@@ -174,12 +174,12 @@ class TestBatchOperationDryRun:
 
     def test_batch_move_dry_run_respects_limit(self, monkeypatch, capsys):
         """cmd_batch_move with dry_run=True and --limit should cap the reported count."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         # 50 matching messages, but limit is 10
         mock_run = Mock(return_value="50")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = Namespace(
             account="iCloud", from_sender="bulk@example.com",
@@ -194,12 +194,12 @@ class TestBatchOperationDryRun:
 
     def test_batch_delete_dry_run_reports_would_delete(self, monkeypatch, capsys):
         """cmd_batch_delete with dry_run=True should print 'Would delete' without deleting."""
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         # Count script returns 15 matching messages
         mock_run = Mock(return_value="15")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = Namespace(
             account="iCloud", mailbox="INBOX",
@@ -225,11 +225,11 @@ class TestCmdProcessInbox:
 
     def test_process_inbox_empty_returns_no_messages(self, monkeypatch, capsys):
         """Test that cmd_process_inbox reports no unread messages when run() returns empty."""
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", limit=50, json=False)
         cmd_process_inbox(args)
@@ -239,9 +239,9 @@ class TestCmdProcessInbox:
 
     def test_process_inbox_categorizes_messages(self, monkeypatch, capsys):
         """Test that cmd_process_inbox parses and categorizes messages from run() output."""
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
 
         # Build mock data: one person email, one noreply notification, one flagged
         sep = FIELD_SEPARATOR
@@ -251,7 +251,7 @@ class TestCmdProcessInbox:
         mock_result = "\n".join([person_line, noreply_line, flagged_line])
 
         mock_run = Mock(return_value=mock_result)
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", limit=50, json=False)
         cmd_process_inbox(args)
@@ -275,12 +275,12 @@ class TestCmdWeeklyReview:
 
     def test_weekly_review_empty_returns_none_sections(self, monkeypatch, capsys):
         """Test that cmd_weekly_review shows None sections when run() returns empty for all."""
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
         # run() is called three times: flagged, attachments, unreplied — all empty
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", days=7, json=False)
         cmd_weekly_review(args)
@@ -295,9 +295,9 @@ class TestCmdWeeklyReview:
 
     def test_weekly_review_with_flagged_data(self, monkeypatch, capsys):
         """Test that cmd_weekly_review shows flagged messages when run() returns data."""
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
 
         sep = FIELD_SEPARATOR
         flagged_line = f"201{sep}Important meeting{sep}boss@work.com{sep}2026-02-20"
@@ -305,7 +305,7 @@ class TestCmdWeeklyReview:
 
         # run() is called 3 times: flagged, attachments, unreplied
         mock_run = Mock(side_effect=[flagged_line, attach_line, ""])
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", days=7, json=False)
         cmd_weekly_review(args)
@@ -326,11 +326,11 @@ class TestCmdCleanNewsletters:
 
     def test_clean_newsletters_empty_reports_no_messages(self, monkeypatch, capsys):
         """Test that cmd_clean_newsletters reports no messages when run() returns empty."""
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", mailbox="INBOX", limit=200, json=False)
         cmd_clean_newsletters(args)
@@ -340,9 +340,9 @@ class TestCmdCleanNewsletters:
 
     def test_clean_newsletters_identifies_bulk_sender(self, monkeypatch, capsys):
         """Test that cmd_clean_newsletters identifies a sender with 3+ messages as newsletter."""
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
 
         sep = FIELD_SEPARATOR
         # newsletter@example.com appears 4 times — should be flagged as newsletter
@@ -354,7 +354,7 @@ class TestCmdCleanNewsletters:
             f"alice@personal.com{sep}false",  # only 1 — not a newsletter
         ]
         mock_run = Mock(return_value="\n".join(lines))
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", mailbox="INBOX", limit=200, json=False)
         cmd_clean_newsletters(args)
@@ -367,9 +367,9 @@ class TestCmdCleanNewsletters:
 
     def test_clean_newsletters_no_newsletters_found(self, monkeypatch, capsys):
         """Test that cmd_clean_newsletters reports when no newsletters are found."""
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.resolve_account", lambda _: "iCloud")
 
         sep = FIELD_SEPARATOR
         # Only one message per sender — none qualify as newsletter
@@ -378,7 +378,7 @@ class TestCmdCleanNewsletters:
             f"bob@personal.com{sep}true",
         ]
         mock_run = Mock(return_value="\n".join(lines))
-        monkeypatch.setattr("my_cli.commands.mail.inbox_tools.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.inbox_tools.run", mock_run)
 
         args = Namespace(account="iCloud", mailbox="INBOX", limit=200, json=False)
         cmd_clean_newsletters(args)
@@ -396,10 +396,10 @@ class TestCmdSaveAttachment:
 
     def test_save_attachment_by_name(self, monkeypatch, capsys, tmp_path):
         """Test that cmd_save_attachment saves an attachment file by name."""
-        from my_cli.commands.mail.attachments import cmd_save_attachment
+        from mxctl.commands.mail.attachments import cmd_save_attachment
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.attachments.resolve_message_context",
+            "mxctl.commands.mail.attachments.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
 
@@ -408,7 +408,7 @@ class TestCmdSaveAttachment:
         list_result = f"Important Email\n{att_name}"
         # save_script returns: "saved"
         mock_run = Mock(side_effect=[list_result, "saved"])
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         # Create a fake saved file so the existence check passes
         fake_file = tmp_path / att_name
@@ -420,7 +420,7 @@ class TestCmdSaveAttachment:
             if p == str(tmp_path / att_name):
                 return True
             return original_isfile(p)
-        monkeypatch.setattr("my_cli.commands.mail.attachments.os.path.isfile", patched_isfile)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.os.path.isfile", patched_isfile)
 
         args = Namespace(
             account="iCloud", mailbox="INBOX", id=42,
@@ -434,16 +434,16 @@ class TestCmdSaveAttachment:
 
     def test_save_attachment_no_attachment_dies(self, monkeypatch):
         """Test that cmd_save_attachment exits when message has no attachments."""
-        from my_cli.commands.mail.attachments import cmd_save_attachment
+        from mxctl.commands.mail.attachments import cmd_save_attachment
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.attachments.resolve_message_context",
+            "mxctl.commands.mail.attachments.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
 
         # list_script returns only subject line — no attachments
         mock_run = Mock(return_value="Empty Email")
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         args = Namespace(
             account="iCloud", mailbox="INBOX", id=42,
@@ -454,17 +454,17 @@ class TestCmdSaveAttachment:
 
     def test_save_attachment_by_index(self, monkeypatch, capsys, tmp_path):
         """Test that cmd_save_attachment resolves attachment by 1-based index."""
-        from my_cli.commands.mail.attachments import cmd_save_attachment
+        from mxctl.commands.mail.attachments import cmd_save_attachment
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.attachments.resolve_message_context",
+            "mxctl.commands.mail.attachments.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
 
         att_name = "invoice.pdf"
         list_result = f"Subject Line\n{att_name}\nother.txt"
         mock_run = Mock(side_effect=[list_result, "saved"])
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         fake_file = tmp_path / att_name
         fake_file.write_bytes(b"data")
@@ -474,7 +474,7 @@ class TestCmdSaveAttachment:
             if p == str(tmp_path / att_name):
                 return True
             return original_isfile(p)
-        monkeypatch.setattr("my_cli.commands.mail.attachments.os.path.isfile", patched_isfile)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.os.path.isfile", patched_isfile)
 
         args = Namespace(
             account="iCloud", mailbox="INBOX", id=42,

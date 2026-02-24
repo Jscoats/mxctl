@@ -2,10 +2,10 @@
 
 import os
 
-from my_cli.util.applescript import escape, run, sanitize_path, validate_msg_id
-from my_cli.util.applescript_templates import list_attachments
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import resolve_message_context
+from mxctl.util.applescript import escape, run, sanitize_path, validate_msg_id
+from mxctl.util.applescript_templates import list_attachments
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import resolve_message_context
 
 
 def cmd_attachments(args) -> None:

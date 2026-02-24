@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock
 
 
-from my_cli.config import FIELD_SEPARATOR
+from mxctl.config import FIELD_SEPARATOR
 
 
 # ---------------------------------------------------------------------------
@@ -13,14 +13,14 @@ from my_cli.config import FIELD_SEPARATOR
 
 def test_cmd_inbox_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_inbox displays unread counts across accounts."""
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}2{FIELD_SEPARATOR}10\n"
         f"MSG{FIELD_SEPARATOR}iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}Mon Feb 14 2026 10:00:00\n"
         f"Example Account{FIELD_SEPARATOR}0{FIELD_SEPARATOR}5\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args()
     cmd_inbox(args)
@@ -34,10 +34,10 @@ def test_cmd_inbox_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_inbox_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_inbox --json returns JSON array."""
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=f"iCloud{FIELD_SEPARATOR}1{FIELD_SEPARATOR}5\n")
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args(json=True)
     cmd_inbox(args)
@@ -49,10 +49,10 @@ def test_cmd_inbox_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_inbox_empty(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_inbox handles empty result."""
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value="")
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args()
     cmd_inbox(args)
@@ -62,12 +62,12 @@ def test_cmd_inbox_empty(monkeypatch, mock_args, capsys):
 
 
 def test_cmd_inbox_empty_no_config_suggests_init(monkeypatch, mock_args, capsys, tmp_path):
-    """Bug fix: cmd_inbox suggests `my mail init` when config is missing and no accounts found."""
-    from my_cli.commands.mail.accounts import cmd_inbox
-    import my_cli.commands.mail.accounts as accounts_mod
+    """Bug fix: cmd_inbox suggests `mxctl init` when config is missing and no accounts found."""
+    from mxctl.commands.mail.accounts import cmd_inbox
+    import mxctl.commands.mail.accounts as accounts_mod
 
     mock_run = Mock(return_value="")
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
     # Simulate missing config file
     monkeypatch.setattr(accounts_mod, "CONFIG_FILE", str(tmp_path / "nonexistent.json"))
 
@@ -76,18 +76,18 @@ def test_cmd_inbox_empty_no_config_suggests_init(monkeypatch, mock_args, capsys,
 
     captured = capsys.readouterr()
     assert "No mail accounts found" in captured.out
-    assert "my mail init" in captured.out
+    assert "mxctl init" in captured.out
 
 
 def test_cmd_inbox_account_filter(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_inbox -a filters to a single account."""
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}1{FIELD_SEPARATOR}8\n"
         f"MSG{FIELD_SEPARATOR}iCloud{FIELD_SEPARATOR}200{FIELD_SEPARATOR}Filtered Subject{FIELD_SEPARATOR}x@x.com{FIELD_SEPARATOR}Mon\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args(account="iCloud")
     cmd_inbox(args)
@@ -104,13 +104,13 @@ def test_cmd_inbox_account_filter(monkeypatch, mock_args, capsys):
 def test_cmd_inbox_no_account_flag_iterates_all_accounts(monkeypatch, capsys):
     """Regression: inbox with no -a flag must query all accounts, not just the default."""
     from argparse import Namespace
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}0{FIELD_SEPARATOR}5\n"
         f"ASU Gmail{FIELD_SEPARATOR}14{FIELD_SEPARATOR}14\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     # Simulate no -a flag: args.account is None
     args = Namespace(account=None, json=False, mailbox="INBOX")
@@ -127,10 +127,10 @@ def test_cmd_inbox_no_account_flag_iterates_all_accounts(monkeypatch, capsys):
 def test_cmd_inbox_with_account_flag_scopes_to_single_account(monkeypatch, capsys):
     """Regression: inbox with -a flag must scope to that account only."""
     from argparse import Namespace
-    from my_cli.commands.mail.accounts import cmd_inbox
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=f"ASU Gmail{FIELD_SEPARATOR}14{FIELD_SEPARATOR}14\n")
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = Namespace(account="ASU Gmail", json=False, mailbox="INBOX")
     cmd_inbox(args)
@@ -146,7 +146,7 @@ def test_cmd_inbox_with_account_flag_scopes_to_single_account(monkeypatch, capsy
 
 def test_cmd_list_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_list displays messages."""
-    from my_cli.commands.mail.messages import cmd_list
+    from mxctl.commands.mail.messages import cmd_list
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}"
@@ -154,7 +154,7 @@ def test_cmd_list_basic(monkeypatch, mock_args, capsys):
         f"124{FIELD_SEPARATOR}Another{FIELD_SEPARATOR}other@example.com{FIELD_SEPARATOR}"
         f"Tue Feb 15 2026{FIELD_SEPARATOR}false{FIELD_SEPARATOR}true\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args()
     cmd_list(args)
@@ -169,10 +169,10 @@ def test_cmd_list_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_list_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_list --json returns JSON array."""
-    from my_cli.commands.mail.messages import cmd_list
+    from mxctl.commands.mail.messages import cmd_list
 
     mock_run = Mock(return_value=f"123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}Mon{FIELD_SEPARATOR}true{FIELD_SEPARATOR}false\n")
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args(json=True)
     cmd_list(args)
@@ -189,7 +189,7 @@ def test_cmd_list_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_read_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_read displays full message details."""
-    from my_cli.commands.mail.messages import cmd_read
+    from mxctl.commands.mail.messages import cmd_read
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}msg-id-123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
@@ -198,7 +198,7 @@ def test_cmd_read_basic(monkeypatch, mock_args, capsys):
         f"to@ex.com,{FIELD_SEPARATOR}cc@ex.com,{FIELD_SEPARATOR}reply@ex.com{FIELD_SEPARATOR}"
         f"This is the message body.{FIELD_SEPARATOR}2"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args(id=123)
     cmd_read(args)
@@ -213,7 +213,7 @@ def test_cmd_read_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_read_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_read --json returns JSON object."""
-    from my_cli.commands.mail.messages import cmd_read
+    from mxctl.commands.mail.messages import cmd_read
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}msg-id{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
@@ -222,7 +222,7 @@ def test_cmd_read_json(monkeypatch, mock_args, capsys):
         f"to@ex.com,{FIELD_SEPARATOR}{FIELD_SEPARATOR}{FIELD_SEPARATOR}"
         f"Body text{FIELD_SEPARATOR}0"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args(id=123, json=True)
     cmd_read(args)
@@ -239,13 +239,13 @@ def test_cmd_read_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_search_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_search finds messages."""
-    from my_cli.commands.mail.messages import cmd_search
+    from mxctl.commands.mail.messages import cmd_search
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
         f"Mon Feb 14{FIELD_SEPARATOR}true{FIELD_SEPARATOR}false{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}iCloud\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args(query="test")
     cmd_search(args)
@@ -258,13 +258,13 @@ def test_cmd_search_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_search_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_search --json returns JSON array."""
-    from my_cli.commands.mail.messages import cmd_search
+    from mxctl.commands.mail.messages import cmd_search
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
         f"Mon{FIELD_SEPARATOR}true{FIELD_SEPARATOR}false{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}iCloud\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.messages.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.messages.run", mock_run)
 
     args = mock_args(query="test", json=True)
     cmd_search(args)
@@ -280,10 +280,10 @@ def test_cmd_search_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_mark_read_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mark_read marks message as read."""
-    from my_cli.commands.mail.actions import cmd_mark_read
+    from mxctl.commands.mail.actions import cmd_mark_read
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123)
     cmd_mark_read(args)
@@ -295,10 +295,10 @@ def test_cmd_mark_read_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_mark_read_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mark_read --json returns JSON."""
-    from my_cli.commands.mail.actions import cmd_mark_read
+    from mxctl.commands.mail.actions import cmd_mark_read
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123, json=True)
     cmd_mark_read(args)
@@ -314,10 +314,10 @@ def test_cmd_mark_read_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_flag_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_flag flags a message."""
-    from my_cli.commands.mail.actions import cmd_flag
+    from mxctl.commands.mail.actions import cmd_flag
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123)
     cmd_flag(args)
@@ -329,10 +329,10 @@ def test_cmd_flag_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_flag_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_flag --json returns JSON."""
-    from my_cli.commands.mail.actions import cmd_flag
+    from mxctl.commands.mail.actions import cmd_flag
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123, json=True)
     cmd_flag(args)
@@ -348,10 +348,10 @@ def test_cmd_flag_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_delete_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_delete moves message to Trash."""
-    from my_cli.commands.mail.actions import cmd_delete
+    from mxctl.commands.mail.actions import cmd_delete
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123)
     cmd_delete(args)
@@ -363,10 +363,10 @@ def test_cmd_delete_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_delete_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_delete --json returns JSON."""
-    from my_cli.commands.mail.actions import cmd_delete
+    from mxctl.commands.mail.actions import cmd_delete
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=123, json=True)
     cmd_delete(args)
@@ -382,13 +382,13 @@ def test_cmd_delete_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_summary_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_summary lists unread messages concisely."""
-    from my_cli.commands.mail.ai import cmd_summary
+    from mxctl.commands.mail.ai import cmd_summary
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test Subject{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}Mon Feb 14 2026\n"
         f"iCloud{FIELD_SEPARATOR}124{FIELD_SEPARATOR}Another{FIELD_SEPARATOR}other@ex.com{FIELD_SEPARATOR}Tue Feb 15 2026\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args()
     cmd_summary(args)
@@ -401,10 +401,10 @@ def test_cmd_summary_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_summary_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_summary --json returns JSON array."""
-    from my_cli.commands.mail.ai import cmd_summary
+    from mxctl.commands.mail.ai import cmd_summary
 
     mock_run = Mock(return_value=f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}Mon\n")
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(json=True)
     cmd_summary(args)
@@ -416,10 +416,10 @@ def test_cmd_summary_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_summary_empty(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_summary handles no unread."""
-    from my_cli.commands.mail.ai import cmd_summary
+    from mxctl.commands.mail.ai import cmd_summary
 
     mock_run = Mock(return_value="")
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args()
     cmd_summary(args)
@@ -434,14 +434,14 @@ def test_cmd_summary_empty(monkeypatch, mock_args, capsys):
 
 def test_cmd_triage_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_triage groups unread by category."""
-    from my_cli.commands.mail.ai import cmd_triage
+    from mxctl.commands.mail.ai import cmd_triage
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Flagged Message{FIELD_SEPARATOR}person@ex.com{FIELD_SEPARATOR}Mon{FIELD_SEPARATOR}true\n"
         f"iCloud{FIELD_SEPARATOR}124{FIELD_SEPARATOR}Personal{FIELD_SEPARATOR}friend@ex.com{FIELD_SEPARATOR}Tue{FIELD_SEPARATOR}false\n"
         f"iCloud{FIELD_SEPARATOR}125{FIELD_SEPARATOR}Notification{FIELD_SEPARATOR}noreply@ex.com{FIELD_SEPARATOR}Wed{FIELD_SEPARATOR}false\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args()
     cmd_triage(args)
@@ -455,10 +455,10 @@ def test_cmd_triage_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_triage_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_triage --json returns categorized JSON."""
-    from my_cli.commands.mail.ai import cmd_triage
+    from mxctl.commands.mail.ai import cmd_triage
 
     mock_run = Mock(return_value=f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}Mon{FIELD_SEPARATOR}false\n")
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(json=True)
     cmd_triage(args)
@@ -471,10 +471,10 @@ def test_cmd_triage_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_triage_account_filter(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_triage -a scopes to a single account."""
-    from my_cli.commands.mail.ai import cmd_triage
+    from mxctl.commands.mail.ai import cmd_triage
 
     mock_run = Mock(return_value=f"iCloud{FIELD_SEPARATOR}123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}friend@ex.com{FIELD_SEPARATOR}Mon{FIELD_SEPARATOR}false\n")
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(account="iCloud")
     cmd_triage(args)
@@ -493,13 +493,13 @@ def test_cmd_triage_account_filter(monkeypatch, mock_args, capsys):
 
 def test_cmd_show_flagged_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_show_flagged lists flagged messages."""
-    from my_cli.commands.mail.analytics import cmd_show_flagged
+    from mxctl.commands.mail.analytics import cmd_show_flagged
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}Flagged Subject{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
         f"Mon Feb 14{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}iCloud\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args()
     cmd_show_flagged(args)
@@ -512,13 +512,13 @@ def test_cmd_show_flagged_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_show_flagged_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_show_flagged --json returns JSON array."""
-    from my_cli.commands.mail.analytics import cmd_show_flagged
+    from mxctl.commands.mail.analytics import cmd_show_flagged
 
     mock_run = Mock(return_value=(
         f"123{FIELD_SEPARATOR}Test{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}"
         f"Mon{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}iCloud\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args(json=True)
     cmd_show_flagged(args)
@@ -534,10 +534,10 @@ def test_cmd_show_flagged_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_open_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_open opens message in Mail.app."""
-    from my_cli.commands.mail.actions import cmd_open
+    from mxctl.commands.mail.actions import cmd_open
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=12345)
     cmd_open(args)
@@ -548,10 +548,10 @@ def test_cmd_open_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_open_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_open --json returns JSON."""
-    from my_cli.commands.mail.actions import cmd_open
+    from mxctl.commands.mail.actions import cmd_open
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=12345, json=True)
     cmd_open(args)
@@ -564,10 +564,10 @@ def test_cmd_open_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_open_viewer_guard(monkeypatch, mock_args, capsys):
     """cmd_open AppleScript includes a guard to create a viewer if none exists."""
-    from my_cli.commands.mail.actions import cmd_open
+    from mxctl.commands.mail.actions import cmd_open
 
     mock_run = Mock(return_value="Test Subject")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=12345)
     cmd_open(args)
@@ -584,14 +584,14 @@ def test_cmd_open_viewer_guard(monkeypatch, mock_args, capsys):
 
 def test_cmd_reply_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_reply creates a reply draft."""
-    from my_cli.commands.mail.composite import cmd_reply
+    from mxctl.commands.mail.composite import cmd_reply
 
     # run() is called twice: once to read the original, once to create the draft
     mock_run = Mock(side_effect=[
         f"Original Subject{chr(0x1F)}Sender Name <sender@example.com>{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Original body text",
         "draft created",
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, body="Thanks for your message.", json=False)
     cmd_reply(args)
@@ -604,13 +604,13 @@ def test_cmd_reply_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_reply_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_reply --json returns JSON."""
-    from my_cli.commands.mail.composite import cmd_reply
+    from mxctl.commands.mail.composite import cmd_reply
 
     mock_run = Mock(side_effect=[
         f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Body",
         "draft created",
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, body="Reply text.", json=True)
     cmd_reply(args)
@@ -627,13 +627,13 @@ def test_cmd_reply_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_forward_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_forward creates a forward draft."""
-    from my_cli.commands.mail.composite import cmd_forward
+    from mxctl.commands.mail.composite import cmd_forward
 
     mock_run = Mock(side_effect=[
         f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Original body",
         "draft created",
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, to="forward@example.com", json=False)
     cmd_forward(args)
@@ -646,13 +646,13 @@ def test_cmd_forward_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_forward_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_forward --json returns JSON."""
-    from my_cli.commands.mail.composite import cmd_forward
+    from mxctl.commands.mail.composite import cmd_forward
 
     mock_run = Mock(side_effect=[
         f"Original Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}Body",
         "draft created",
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, to="forward@example.com", json=True)
     cmd_forward(args)
@@ -669,12 +669,12 @@ def test_cmd_forward_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_export_basic(monkeypatch, mock_args, tmp_path, capsys):
     """Smoke test: cmd_export writes a markdown file."""
-    from my_cli.commands.mail.composite import cmd_export
+    from mxctl.commands.mail.composite import cmd_export
 
     mock_run = Mock(return_value=(
         f"Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}This is the body."
     ))
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     dest = str(tmp_path)
     args = mock_args(target="123", to=dest, json=False, after=None)
@@ -692,12 +692,12 @@ def test_cmd_export_basic(monkeypatch, mock_args, tmp_path, capsys):
 
 def test_cmd_export_json(monkeypatch, mock_args, tmp_path, capsys):
     """Smoke test: cmd_export --json returns JSON."""
-    from my_cli.commands.mail.composite import cmd_export
+    from mxctl.commands.mail.composite import cmd_export
 
     mock_run = Mock(return_value=(
         f"Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Body text."
     ))
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     dest = str(tmp_path)
     args = mock_args(target="123", to=dest, json=True, after=None)
@@ -714,7 +714,7 @@ def test_cmd_export_json(monkeypatch, mock_args, tmp_path, capsys):
 
 def test_cmd_thread_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_thread shows conversation thread."""
-    from my_cli.commands.mail.composite import cmd_thread
+    from mxctl.commands.mail.composite import cmd_thread
 
     # run() called twice: first for subject, then for thread messages
     mock_run = Mock(side_effect=[
@@ -724,7 +724,7 @@ def test_cmd_thread_basic(monkeypatch, mock_args, capsys):
             f"101{chr(0x1F)}Re: Original Subject{chr(0x1F)}other@example.com{chr(0x1F)}Tue Feb 15 2026{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n"
         ),
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, json=False, limit=100, all_accounts=False)
     cmd_thread(args)
@@ -738,13 +738,13 @@ def test_cmd_thread_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_thread_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_thread --json returns JSON array."""
-    from my_cli.commands.mail.composite import cmd_thread
+    from mxctl.commands.mail.composite import cmd_thread
 
     mock_run = Mock(side_effect=[
         "Original Subject",
         f"100{chr(0x1F)}Re: Original Subject{chr(0x1F)}person@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n",
     ])
-    monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
     args = mock_args(id=123, json=True, limit=100, all_accounts=False)
     cmd_thread(args)
@@ -761,7 +761,7 @@ def test_cmd_thread_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_top_senders_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_top_senders shows most frequent senders."""
-    from my_cli.commands.mail.analytics import cmd_top_senders
+    from mxctl.commands.mail.analytics import cmd_top_senders
 
     mock_run = Mock(return_value=(
         "alice@example.com\n"
@@ -770,7 +770,7 @@ def test_cmd_top_senders_basic(monkeypatch, mock_args, capsys):
         "alice@example.com\n"
         "bob@example.com\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args(days=30, limit=10, json=False)
     cmd_top_senders(args)
@@ -783,14 +783,14 @@ def test_cmd_top_senders_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_top_senders_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_top_senders --json returns JSON array."""
-    from my_cli.commands.mail.analytics import cmd_top_senders
+    from mxctl.commands.mail.analytics import cmd_top_senders
 
     mock_run = Mock(return_value=(
         "alice@example.com\n"
         "alice@example.com\n"
         "bob@example.com\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args(days=30, limit=10, json=True)
     cmd_top_senders(args)
@@ -807,13 +807,13 @@ def test_cmd_top_senders_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_digest_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_digest shows unread grouped by sender domain."""
-    from my_cli.commands.mail.analytics import cmd_digest
+    from mxctl.commands.mail.analytics import cmd_digest
 
     mock_run = Mock(return_value=(
         f"iCloud{chr(0x1F)}123{chr(0x1F)}Newsletter Update{chr(0x1F)}news@example.com{chr(0x1F)}Mon Feb 14 2026\n"
         f"iCloud{chr(0x1F)}124{chr(0x1F)}Hello there{chr(0x1F)}friend@personal.org{chr(0x1F)}Tue Feb 15 2026\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args(json=False)
     cmd_digest(args)
@@ -826,12 +826,12 @@ def test_cmd_digest_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_digest_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_digest --json returns JSON dict."""
-    from my_cli.commands.mail.analytics import cmd_digest
+    from mxctl.commands.mail.analytics import cmd_digest
 
     mock_run = Mock(return_value=(
         f"iCloud{chr(0x1F)}123{chr(0x1F)}Test Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
     args = mock_args(json=True)
     cmd_digest(args)
@@ -847,7 +847,7 @@ def test_cmd_digest_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_headers_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_headers shows email header summary."""
-    from my_cli.commands.mail.system import cmd_headers
+    from mxctl.commands.mail.system import cmd_headers
 
     raw_headers = (
         "From: Sender Name <sender@example.com>\n"
@@ -860,7 +860,7 @@ def test_cmd_headers_basic(monkeypatch, mock_args, capsys):
         "Received: from smtp.example.com by mail.example.com\n"
     )
     mock_run = Mock(return_value=raw_headers)
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args(id=123, json=False, raw=False)
     cmd_headers(args)
@@ -875,7 +875,7 @@ def test_cmd_headers_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_headers_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_headers --json returns JSON dict of headers."""
-    from my_cli.commands.mail.system import cmd_headers
+    from mxctl.commands.mail.system import cmd_headers
 
     raw_headers = (
         "From: sender@example.com\n"
@@ -885,7 +885,7 @@ def test_cmd_headers_json(monkeypatch, mock_args, capsys):
         "Message-Id: <abc123@example.com>\n"
     )
     mock_run = Mock(return_value=raw_headers)
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args(id=123, json=True, raw=False)
     cmd_headers(args)
@@ -902,13 +902,13 @@ def test_cmd_headers_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_rules_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_rules lists mail rules."""
-    from my_cli.commands.mail.system import cmd_rules
+    from mxctl.commands.mail.system import cmd_rules
 
     mock_run = Mock(return_value=(
         f"Move Newsletters{chr(0x1F)}true\n"
         f"Archive Old Mail{chr(0x1F)}false\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args(json=False, action=None, rule_name=None)
     cmd_rules(args)
@@ -921,13 +921,13 @@ def test_cmd_rules_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_rules_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_rules --json returns JSON array."""
-    from my_cli.commands.mail.system import cmd_rules
+    from mxctl.commands.mail.system import cmd_rules
 
     mock_run = Mock(return_value=(
         f"Move Newsletters{chr(0x1F)}true\n"
         f"Archive Old Mail{chr(0x1F)}false\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args(json=True, action=None, rule_name=None)
     cmd_rules(args)
@@ -944,14 +944,14 @@ def test_cmd_rules_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_attachments_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_attachments lists message attachments."""
-    from my_cli.commands.mail.attachments import cmd_attachments
+    from mxctl.commands.mail.attachments import cmd_attachments
 
     mock_run = Mock(return_value=(
         "Test Subject\n"
         "report.pdf\n"
         "invoice.xlsx\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
     args = mock_args(id=123, json=False)
     cmd_attachments(args)
@@ -964,13 +964,13 @@ def test_cmd_attachments_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_attachments_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_attachments --json returns JSON."""
-    from my_cli.commands.mail.attachments import cmd_attachments
+    from mxctl.commands.mail.attachments import cmd_attachments
 
     mock_run = Mock(return_value=(
         "Test Subject\n"
         "document.pdf\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
     args = mock_args(id=123, json=True)
     cmd_attachments(args)
@@ -987,14 +987,14 @@ def test_cmd_attachments_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_context_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_context shows message with thread history."""
-    from my_cli.commands.mail.ai import cmd_context
+    from mxctl.commands.mail.ai import cmd_context
 
     # run() called twice: once for main message, once for thread
     mock_run = Mock(side_effect=[
         f"Context Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Main message body.",
         "",  # empty thread
     ])
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(id=123, json=False, limit=50, all_accounts=False)
     cmd_context(args)
@@ -1008,9 +1008,9 @@ def test_cmd_context_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_context_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_context --json returns JSON with message and thread."""
-    from my_cli.commands.mail.ai import cmd_context
+    from mxctl.commands.mail.ai import cmd_context
 
-    from my_cli.config import RECORD_SEPARATOR
+    from mxctl.config import RECORD_SEPARATOR
     thread_entry = (
         f"200{chr(0x1F)}Re: Context Subject{chr(0x1F)}other@example.com"
         f"{chr(0x1F)}Tue Feb 15 2026{chr(0x1F)}Previous reply body."
@@ -1019,7 +1019,7 @@ def test_cmd_context_json(monkeypatch, mock_args, capsys):
         f"Context Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Mon Feb 14 2026{chr(0x1F)}to@example.com, {chr(0x1F)}Main body.",
         thread_entry + RECORD_SEPARATOR,
     ])
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(id=123, json=True, limit=50, all_accounts=False)
     cmd_context(args)
@@ -1037,14 +1037,14 @@ def test_cmd_context_json(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related searches and groups by conversation."""
     from unittest.mock import Mock
-    from my_cli.commands.mail.ai import cmd_find_related
+    from mxctl.commands.mail.ai import cmd_find_related
 
     search_result = (
         f"1{FIELD_SEPARATOR}Project Update{FIELD_SEPARATOR}alice@test.com{FIELD_SEPARATOR}Mon Feb 10 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work\n"
         f"2{FIELD_SEPARATOR}Re: Project Update{FIELD_SEPARATOR}bob@test.com{FIELD_SEPARATOR}Tue Feb 11 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work"
     )
     mock_run = Mock(return_value=search_result)
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(query="Project Update", json=False)
     cmd_find_related(args)
@@ -1057,13 +1057,13 @@ def test_cmd_find_related_basic(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related JSON output groups by thread."""
     from unittest.mock import Mock
-    from my_cli.commands.mail.ai import cmd_find_related
+    from mxctl.commands.mail.ai import cmd_find_related
 
     search_result = (
         f"1{FIELD_SEPARATOR}Meeting Notes{FIELD_SEPARATOR}alice@test.com{FIELD_SEPARATOR}Mon Feb 10 2026{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}Work"
     )
     mock_run = Mock(return_value=search_result)
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(query="Meeting Notes", json=True)
     cmd_find_related(args)
@@ -1075,10 +1075,10 @@ def test_cmd_find_related_json(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_empty(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related handles no results."""
     from unittest.mock import Mock
-    from my_cli.commands.mail.ai import cmd_find_related
+    from mxctl.commands.mail.ai import cmd_find_related
 
     mock_run = Mock(return_value="")
-    monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
 
     args = mock_args(query="nonexistent", json=False)
     cmd_find_related(args)
@@ -1093,13 +1093,13 @@ def test_cmd_find_related_empty(monkeypatch, mock_args, capsys):
 
 def test_cmd_accounts_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_accounts lists configured mail accounts."""
-    from my_cli.commands.mail.accounts import cmd_accounts
+    from mxctl.commands.mail.accounts import cmd_accounts
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
         f"Work Gmail{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@work.com{FIELD_SEPARATOR}false\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args()
     cmd_accounts(args)
@@ -1114,12 +1114,12 @@ def test_cmd_accounts_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_accounts_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_accounts --json returns JSON array of accounts."""
-    from my_cli.commands.mail.accounts import cmd_accounts
+    from mxctl.commands.mail.accounts import cmd_accounts
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args(json=True)
     cmd_accounts(args)
@@ -1132,10 +1132,10 @@ def test_cmd_accounts_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_accounts_empty(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_accounts handles no accounts found."""
-    from my_cli.commands.mail.accounts import cmd_accounts
+    from mxctl.commands.mail.accounts import cmd_accounts
 
     mock_run = Mock(return_value="")
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args()
     cmd_accounts(args)
@@ -1146,12 +1146,12 @@ def test_cmd_accounts_empty(monkeypatch, mock_args, capsys):
 
 def test_cmd_accounts_applescript_content(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_accounts sends AppleScript that reads account properties."""
-    from my_cli.commands.mail.accounts import cmd_accounts
+    from mxctl.commands.mail.accounts import cmd_accounts
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}John Doe{FIELD_SEPARATOR}john@icloud.com{FIELD_SEPARATOR}true\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args()
     cmd_accounts(args)
@@ -1168,16 +1168,16 @@ def test_cmd_accounts_applescript_content(monkeypatch, mock_args, capsys):
 
 def test_cmd_mailboxes_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mailboxes lists all mailboxes across all accounts."""
-    from my_cli.commands.mail.accounts import cmd_mailboxes
+    from mxctl.commands.mail.accounts import cmd_mailboxes
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}3\n"
         f"iCloud{FIELD_SEPARATOR}Sent{FIELD_SEPARATOR}0\n"
         f"Work{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}1\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
     # Patch resolve_account to return None so the all-accounts code path is taken
-    monkeypatch.setattr("my_cli.commands.mail.accounts.resolve_account", lambda x: None)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.resolve_account", lambda x: None)
 
     args = mock_args(account=None)
     cmd_mailboxes(args)
@@ -1191,15 +1191,15 @@ def test_cmd_mailboxes_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_mailboxes_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mailboxes --json returns JSON array of mailboxes."""
-    from my_cli.commands.mail.accounts import cmd_mailboxes
+    from mxctl.commands.mail.accounts import cmd_mailboxes
 
     mock_run = Mock(return_value=(
         f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}5\n"
         f"iCloud{FIELD_SEPARATOR}Sent{FIELD_SEPARATOR}0\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
     # Patch resolve_account to return None so the all-accounts code path is taken
-    monkeypatch.setattr("my_cli.commands.mail.accounts.resolve_account", lambda x: None)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.resolve_account", lambda x: None)
 
     args = mock_args(account=None, json=True)
     cmd_mailboxes(args)
@@ -1212,14 +1212,14 @@ def test_cmd_mailboxes_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_mailboxes_account_filter(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mailboxes -a scopes to a single account."""
-    from my_cli.commands.mail.accounts import cmd_mailboxes
+    from mxctl.commands.mail.accounts import cmd_mailboxes
 
     mock_run = Mock(return_value=(
         f"INBOX{FIELD_SEPARATOR}2\n"
         f"Sent Messages{FIELD_SEPARATOR}0\n"
         f"Junk{FIELD_SEPARATOR}0\n"
     ))
-    monkeypatch.setattr("my_cli.commands.mail.accounts.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
 
     args = mock_args(account="iCloud")
     cmd_mailboxes(args)
@@ -1240,10 +1240,10 @@ def test_cmd_mailboxes_account_filter(monkeypatch, mock_args, capsys):
 
 def test_cmd_mark_unread_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mark_unread marks a message as unread."""
-    from my_cli.commands.mail.actions import cmd_mark_unread
+    from mxctl.commands.mail.actions import cmd_mark_unread
 
     mock_run = Mock(return_value="Important Message")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=456)
     cmd_mark_unread(args)
@@ -1255,10 +1255,10 @@ def test_cmd_mark_unread_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_mark_unread_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mark_unread --json returns JSON with status=unread."""
-    from my_cli.commands.mail.actions import cmd_mark_unread
+    from mxctl.commands.mail.actions import cmd_mark_unread
 
     mock_run = Mock(return_value="Important Message")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=456, json=True)
     cmd_mark_unread(args)
@@ -1271,10 +1271,10 @@ def test_cmd_mark_unread_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_mark_unread_applescript_sets_read_false(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_mark_unread AppleScript sets read status to false."""
-    from my_cli.commands.mail.actions import cmd_mark_unread
+    from mxctl.commands.mail.actions import cmd_mark_unread
 
     mock_run = Mock(return_value="Important Message")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=456)
     cmd_mark_unread(args)
@@ -1290,10 +1290,10 @@ def test_cmd_mark_unread_applescript_sets_read_false(monkeypatch, mock_args, cap
 
 def test_cmd_unflag_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_unflag removes flag from a message."""
-    from my_cli.commands.mail.actions import cmd_unflag
+    from mxctl.commands.mail.actions import cmd_unflag
 
     mock_run = Mock(return_value="Flagged Item")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=789)
     cmd_unflag(args)
@@ -1305,10 +1305,10 @@ def test_cmd_unflag_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_unflag_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_unflag --json returns JSON with status=unflagged."""
-    from my_cli.commands.mail.actions import cmd_unflag
+    from mxctl.commands.mail.actions import cmd_unflag
 
     mock_run = Mock(return_value="Flagged Item")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=789, json=True)
     cmd_unflag(args)
@@ -1321,10 +1321,10 @@ def test_cmd_unflag_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_unflag_applescript_sets_flagged_false(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_unflag AppleScript sets flagged status to false."""
-    from my_cli.commands.mail.actions import cmd_unflag
+    from mxctl.commands.mail.actions import cmd_unflag
 
     mock_run = Mock(return_value="Flagged Item")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=789)
     cmd_unflag(args)
@@ -1340,10 +1340,10 @@ def test_cmd_unflag_applescript_sets_flagged_false(monkeypatch, mock_args, capsy
 
 def test_cmd_move_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_move moves a message between mailboxes."""
-    from my_cli.commands.mail.actions import cmd_move
+    from mxctl.commands.mail.actions import cmd_move
 
     mock_run = Mock(return_value="Project Proposal")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive")
     cmd_move(args)
@@ -1357,10 +1357,10 @@ def test_cmd_move_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_move_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_move --json returns JSON with source and destination."""
-    from my_cli.commands.mail.actions import cmd_move
+    from mxctl.commands.mail.actions import cmd_move
 
     mock_run = Mock(return_value="Project Proposal")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive", json=True)
     cmd_move(args)
@@ -1374,10 +1374,10 @@ def test_cmd_move_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_move_applescript_uses_mailboxes(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_move AppleScript references source and destination mailboxes."""
-    from my_cli.commands.mail.actions import cmd_move
+    from mxctl.commands.mail.actions import cmd_move
 
     mock_run = Mock(return_value="Project Proposal")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=321, account="iCloud", from_mailbox="INBOX", to_mailbox="Archive")
     cmd_move(args)
@@ -1394,10 +1394,10 @@ def test_cmd_move_applescript_uses_mailboxes(monkeypatch, mock_args, capsys):
 
 def test_cmd_junk_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_junk marks a message as junk."""
-    from my_cli.commands.mail.actions import cmd_junk
+    from mxctl.commands.mail.actions import cmd_junk
 
     mock_run = Mock(return_value="Suspicious Newsletter")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=555)
     cmd_junk(args)
@@ -1409,10 +1409,10 @@ def test_cmd_junk_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_junk_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_junk --json returns JSON with status=junk."""
-    from my_cli.commands.mail.actions import cmd_junk
+    from mxctl.commands.mail.actions import cmd_junk
 
     mock_run = Mock(return_value="Suspicious Newsletter")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=555, json=True)
     cmd_junk(args)
@@ -1425,10 +1425,10 @@ def test_cmd_junk_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_junk_applescript_sets_junk_true(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_junk AppleScript sets junk mail status to true."""
-    from my_cli.commands.mail.actions import cmd_junk
+    from mxctl.commands.mail.actions import cmd_junk
 
     mock_run = Mock(return_value="Suspicious Newsletter")
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
     args = mock_args(id=555)
     cmd_junk(args)
@@ -1444,11 +1444,11 @@ def test_cmd_junk_applescript_sets_junk_true(monkeypatch, mock_args, capsys):
 
 def test_cmd_not_junk_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_not_junk marks a message as not junk and moves to INBOX."""
-    from my_cli.commands.mail.actions import cmd_not_junk
+    from mxctl.commands.mail.actions import cmd_not_junk
 
     # cmd_not_junk uses _try_not_junk_in_mailbox (subprocess) for fallback search
     monkeypatch.setattr(
-        "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+        "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
         Mock(return_value="Legitimate Newsletter"),
     )
 
@@ -1463,10 +1463,10 @@ def test_cmd_not_junk_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_not_junk_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_not_junk --json returns JSON with status=not_junk."""
-    from my_cli.commands.mail.actions import cmd_not_junk
+    from mxctl.commands.mail.actions import cmd_not_junk
 
     monkeypatch.setattr(
-        "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+        "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
         Mock(return_value="Legitimate Newsletter"),
     )
 
@@ -1481,11 +1481,11 @@ def test_cmd_not_junk_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_not_junk_applescript_moves_to_inbox(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_not_junk AppleScript clears junk status and moves to INBOX via _try_not_junk_in_mailbox."""
-    from my_cli.commands.mail.actions import cmd_not_junk
+    from mxctl.commands.mail.actions import cmd_not_junk
 
     mock_helper = Mock(return_value="Legitimate Newsletter")
     monkeypatch.setattr(
-        "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+        "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
         mock_helper,
     )
 
@@ -1502,12 +1502,12 @@ def test_cmd_not_junk_applescript_moves_to_inbox(monkeypatch, mock_args, capsys)
 
 def test_cmd_not_junk_falls_back_to_spam(monkeypatch, mock_args, capsys):
     """Bug fix: cmd_not_junk tries Spam as a fallback when Junk mailbox fails."""
-    from my_cli.commands.mail.actions import cmd_not_junk
+    from mxctl.commands.mail.actions import cmd_not_junk
 
     # First call (Junk) returns None (not found), second call (Spam) succeeds
     mock_helper = Mock(side_effect=[None, "Newsletter"])
     monkeypatch.setattr(
-        "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+        "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
         mock_helper,
     )
 
@@ -1521,10 +1521,10 @@ def test_cmd_not_junk_falls_back_to_spam(monkeypatch, mock_args, capsys):
 
 def test_cmd_not_junk_all_candidates_fail(monkeypatch, mock_args, capsys):
     """Bug fix: cmd_not_junk shows clear error when message not found in any junk folder."""
-    from my_cli.commands.mail.actions import cmd_not_junk
+    from mxctl.commands.mail.actions import cmd_not_junk
 
     monkeypatch.setattr(
-        "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+        "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
         Mock(return_value=None),
     )
 
@@ -1539,14 +1539,14 @@ def test_cmd_not_junk_all_candidates_fail(monkeypatch, mock_args, capsys):
 
 def test_cmd_junk_cross_account_hint(monkeypatch, mock_args, capsys):
     """Bug fix: cmd_junk shows cross-account hint when message not found and no -a given."""
-    from my_cli.commands.mail.actions import cmd_junk
+    from mxctl.commands.mail.actions import cmd_junk
     import sys
 
     def mock_run_fail(script):
         print("Error: Message not found", file=sys.stderr)
         sys.exit(1)
 
-    monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run_fail)
+    monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run_fail)
 
     # No explicit account — hint should be shown
     args = mock_args(id=999, account=None)
@@ -1563,10 +1563,10 @@ def test_cmd_junk_cross_account_hint(monkeypatch, mock_args, capsys):
 
 def test_cmd_check_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_check triggers a mail fetch and reports success."""
-    from my_cli.commands.mail.system import cmd_check
+    from mxctl.commands.mail.system import cmd_check
 
     mock_run = Mock(return_value="ok")
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args()
     cmd_check(args)
@@ -1577,10 +1577,10 @@ def test_cmd_check_basic(monkeypatch, mock_args, capsys):
 
 def test_cmd_check_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_check --json returns JSON with status=checked."""
-    from my_cli.commands.mail.system import cmd_check
+    from mxctl.commands.mail.system import cmd_check
 
     mock_run = Mock(return_value="ok")
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args(json=True)
     cmd_check(args)
@@ -1591,10 +1591,10 @@ def test_cmd_check_json(monkeypatch, mock_args, capsys):
 
 def test_cmd_check_applescript_calls_check_for_new_mail(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_check AppleScript invokes 'check for new mail'."""
-    from my_cli.commands.mail.system import cmd_check
+    from mxctl.commands.mail.system import cmd_check
 
     mock_run = Mock(return_value="ok")
-    monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+    monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
     args = mock_args()
     cmd_check(args)

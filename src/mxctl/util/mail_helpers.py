@@ -8,9 +8,9 @@ import sys
 from argparse import Namespace
 from email.utils import parseaddr
 
-from my_cli.config import CONFIG_FILE, DEFAULT_MAILBOX, get_gmail_accounts, resolve_account
-from my_cli.util.applescript import escape
-from my_cli.util.formatting import die
+from mxctl.config import CONFIG_FILE, DEFAULT_MAILBOX, get_gmail_accounts, resolve_account
+from mxctl.util.applescript import escape
+from mxctl.util.formatting import die
 
 # Friendly name → Gmail IMAP folder name
 GMAIL_MAILBOX_MAP: dict[str, str] = {
@@ -58,11 +58,11 @@ def resolve_message_context(args: Namespace) -> tuple[str, str, str, str]:
     account = resolve_account(getattr(args, "account", None))
     if not account:
         if not os.path.isfile(CONFIG_FILE):
-            die("No account configured. Run `my mail init` to get started.")
+            die("No account configured. Run `mxctl init` to get started.")
         else:
-            die("No default account set. Run `my mail init` to configure one, or use -a ACCOUNT.")
+            die("No default account set. Run `mxctl init` to configure one, or use -a ACCOUNT.")
     if not os.path.isfile(CONFIG_FILE):
-        print(f"Note: No config file found. Using last-used account '{account}'. Run `my mail init` to create a config.", file=sys.stderr)
+        print(f"Note: No config file found. Using last-used account '{account}'. Run `mxctl init` to create a config.", file=sys.stderr)
     mailbox = getattr(args, "mailbox", None) or DEFAULT_MAILBOX
     mailbox = resolve_mailbox(account, mailbox)
 

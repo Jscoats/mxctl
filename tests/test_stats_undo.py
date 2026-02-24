@@ -4,15 +4,15 @@ import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
 import pytest
-from my_cli.config import FIELD_SEPARATOR
-from my_cli.commands.mail.analytics import cmd_stats
+from mxctl.config import FIELD_SEPARATOR
+from mxctl.commands.mail.analytics import cmd_stats
 
 
 
 class TestEnhancedStats:
     """Test enhanced stats with --all flag."""
 
-    @patch("my_cli.commands.mail.analytics.run")
+    @patch("mxctl.commands.mail.analytics.run")
     def test_stats_all_flag_shows_all_mailboxes(self, mock_run, mock_args, capsys):
         """Test that --all flag shows account-wide stats."""
         # Mock AppleScript output: grand totals on first line, then per-mailbox
@@ -34,8 +34,8 @@ class TestEnhancedStats:
         assert "Sent Messages: 30 messages, 0 unread" in captured.out
         assert "Archive: 20 messages, 5 unread" in captured.out
 
-    @patch("my_cli.commands.mail.analytics.resolve_account", return_value=None)
-    @patch("my_cli.commands.mail.analytics.run")
+    @patch("mxctl.commands.mail.analytics.resolve_account", return_value=None)
+    @patch("mxctl.commands.mail.analytics.run")
     def test_stats_all_no_account_shows_all_accounts(self, mock_run, mock_resolve, mock_args, capsys):
         """Test that --all without -a aggregates across all configured accounts."""
         # No account scoping — output includes multiple accounts
@@ -54,7 +54,7 @@ class TestEnhancedStats:
         assert "[iCloud] INBOX" in captured.out
         assert "[Gmail] INBOX" in captured.out
 
-    @patch("my_cli.commands.mail.analytics.run")
+    @patch("mxctl.commands.mail.analytics.run")
     def test_stats_without_all_flag_single_mailbox(self, mock_run, mock_args, capsys):
         """Test that without --all flag, shows single mailbox stats."""
         mock_run.return_value = f"100{FIELD_SEPARATOR}20"  # 100 total, 20 unread
@@ -71,7 +71,7 @@ class TestUndoLogging:
 
     def test_log_batch_operation_creates_entry(self, tmp_path, monkeypatch):
         """Test that logging a batch operation creates a proper entry."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -95,7 +95,7 @@ class TestUndoLogging:
 
     def test_undo_log_keeps_only_last_10_operations(self, tmp_path, monkeypatch):
         """Test that undo log is trimmed to MAX_UNDO_OPERATIONS."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -113,7 +113,7 @@ class TestUndoLogging:
 
     def test_undo_list_shows_recent_operations(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that undo --list shows recent operations."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -135,7 +135,7 @@ class TestUndoLogging:
 
     def test_undo_list_empty_when_no_operations(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that undo --list shows appropriate message when empty."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
         test_log = tmp_path / "mail-undo-empty.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -149,7 +149,7 @@ class TestUndoLogging:
 class TestBatchDelete:
     """Tests for batch-delete --from-sender support."""
 
-    @patch("my_cli.commands.mail.batch.run")
+    @patch("mxctl.commands.mail.batch.run")
     def test_batch_delete_from_sender_dry_run(self, mock_run, mock_args, capsys):
         """Test --from-sender dry run reports match count without deleting."""
         mock_run.return_value = "5"  # count script returns 5
@@ -157,7 +157,7 @@ class TestBatchDelete:
             account="iCloud", mailbox=None, older_than=None,
             from_sender="noreply@example.com", dry_run=True, force=False, limit=None, json=False,
         )
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -167,7 +167,7 @@ class TestBatchDelete:
         # Only one run() call — the count script, no delete
         assert mock_run.call_count == 1
 
-    @patch("my_cli.commands.mail.batch.run")
+    @patch("mxctl.commands.mail.batch.run")
     def test_batch_delete_from_sender_scans_all_mailboxes(self, mock_run, mock_args, capsys):
         """Test --from-sender without -m uses all-mailboxes script."""
         mock_run.side_effect = ["3", "3\n101\n102\n103"]  # count, then delete
@@ -175,7 +175,7 @@ class TestBatchDelete:
             account="iCloud", mailbox=None, older_than=None,
             from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
         )
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -185,7 +185,7 @@ class TestBatchDelete:
         assert "mailboxes of account" in delete_script
         assert 'mailbox "' not in delete_script
 
-    @patch("my_cli.commands.mail.batch.run")
+    @patch("mxctl.commands.mail.batch.run")
     def test_batch_delete_from_sender_with_mailbox(self, mock_run, mock_args, capsys):
         """Test --from-sender -m scopes to a single mailbox."""
         mock_run.side_effect = ["2", "2\n201\n202"]
@@ -193,7 +193,7 @@ class TestBatchDelete:
             account="iCloud", mailbox="Junk", older_than=None,
             from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
         )
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -201,7 +201,7 @@ class TestBatchDelete:
         delete_script = mock_run.call_args_list[1][0][0]
         assert 'mailbox "Junk"' in delete_script
 
-    @patch("my_cli.commands.mail.batch.run")
+    @patch("mxctl.commands.mail.batch.run")
     def test_batch_delete_combined_filters(self, mock_run, mock_args, capsys):
         """Test --from-sender + --older-than builds combined where clause."""
         mock_run.side_effect = ["1", "1\n301"]
@@ -209,7 +209,7 @@ class TestBatchDelete:
             account="iCloud", mailbox="INBOX", older_than=30,
             from_sender="old@example.com", dry_run=False, force=True, limit=None, json=False,
         )
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         cmd_batch_delete(args)
 
         count_script = mock_run.call_args_list[0][0][0]
@@ -218,7 +218,7 @@ class TestBatchDelete:
 
     def test_batch_delete_no_filters_raises(self, mock_args):
         """Test that providing neither --from-sender nor --older-than exits."""
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         args = mock_args(
             account="iCloud", mailbox="INBOX", older_than=None,
             from_sender=None, dry_run=False, force=False, limit=None, json=False,
@@ -228,7 +228,7 @@ class TestBatchDelete:
 
     def test_batch_delete_older_than_without_mailbox_raises(self, mock_args):
         """Test that --older-than alone without -m exits for safety."""
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
         args = mock_args(
             account="iCloud", mailbox=None, older_than=30,
             from_sender=None, dry_run=False, force=False, limit=None, json=False,
@@ -242,7 +242,7 @@ class TestCmdUndo:
 
     def test_undo_batch_move_calls_run_with_move_script(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that cmd_undo for batch-move calls run() with a script that moves messages back."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -256,7 +256,7 @@ class TestCmdUndo:
             sender="sender@example.com",
         )
 
-        mock_run = patch("my_cli.commands.mail.undo.run")
+        mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
             mocked.return_value = "2"
             args = mock_args(json=False)
@@ -275,7 +275,7 @@ class TestCmdUndo:
 
     def test_undo_batch_delete_restores_from_trash(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that cmd_undo for batch-delete moves messages from Trash back to source."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -289,7 +289,7 @@ class TestCmdUndo:
             sender="deleted@example.com",
         )
 
-        mock_run = patch("my_cli.commands.mail.undo.run")
+        mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
             mocked.return_value = "3"
             args = mock_args(json=False)
@@ -311,7 +311,7 @@ class TestUndoStaleness:
 
     def test_undo_rejects_stale_entry_without_force(self, tmp_path, monkeypatch, mock_args):
         """Stale entry (>30 min old) should cause die() without --force."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -335,7 +335,7 @@ class TestUndoStaleness:
 
     def test_undo_force_bypasses_staleness(self, tmp_path, monkeypatch, mock_args, capsys):
         """--force should run the undo even if the entry is older than 30 minutes."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -352,7 +352,7 @@ class TestUndoStaleness:
             "older_than_days": None,
         }]))
 
-        mock_run = patch("my_cli.commands.mail.undo.run")
+        mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
             mocked.return_value = "1"
             args = mock_args(json=False, force=True)
@@ -363,7 +363,7 @@ class TestUndoStaleness:
 
     def test_undo_stale_message_mentions_age_and_force(self, tmp_path, monkeypatch, mock_args, capsys):
         """Stale-entry error message should mention minutes and --force."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -390,7 +390,7 @@ class TestUndoStaleness:
 
     def test_undo_fresh_entry_executes_normally(self, tmp_path, monkeypatch, mock_args, capsys):
         """Fresh entry (<30 min old) should execute without --force."""
-        import my_cli.commands.mail.undo as undo_module
+        import mxctl.commands.mail.undo as undo_module
 
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
@@ -404,7 +404,7 @@ class TestUndoStaleness:
             sender="test@example.com",
         )
 
-        mock_run = patch("my_cli.commands.mail.undo.run")
+        mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
             mocked.return_value = "1"
             args = mock_args(json=False, force=False)
@@ -417,7 +417,7 @@ class TestUndoStaleness:
 class TestStatsAllAccountsFix:
     """Regression tests ensuring stats --all (without -a) hits all accounts."""
 
-    @patch("my_cli.commands.mail.analytics.run")
+    @patch("mxctl.commands.mail.analytics.run")
     def test_stats_all_no_explicit_account_uses_all_accounts_script(self, mock_run, mock_args, capsys):
         """stats --all without -a must use the all-accounts AppleScript branch."""
         mock_run.return_value = (
@@ -440,7 +440,7 @@ class TestStatsAllAccountsFix:
         assert "[iCloud] INBOX" in captured.out
         assert "[Gmail] INBOX" in captured.out
 
-    @patch("my_cli.commands.mail.analytics.run")
+    @patch("mxctl.commands.mail.analytics.run")
     def test_stats_all_with_explicit_account_uses_single_account_script(self, mock_run, mock_args, capsys):
         """stats --all -a ACCOUNT must use the single-account AppleScript branch."""
         mock_run.return_value = (

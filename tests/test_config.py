@@ -2,7 +2,7 @@
 
 import json
 
-from my_cli.config import resolve_account, validate_limit
+from mxctl.config import resolve_account, validate_limit
 
 
 class TestValidateLimit:
@@ -31,11 +31,11 @@ class TestResolveAccount:
         # Mock config dir
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         result = resolve_account("ExplicitAccount")
         assert result == "ExplicitAccount"
@@ -49,11 +49,11 @@ class TestResolveAccount:
     def test_config_fallback(self, tmp_path, monkeypatch):
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         # Set config default (namespaced under "mail")
         config_file = config_dir / "config.json"
@@ -67,11 +67,11 @@ class TestResolveAccount:
     def test_state_fallback(self, tmp_path, monkeypatch):
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         # Set state last-used (namespaced under "mail")
         state_file = config_dir / "state.json"
@@ -83,11 +83,11 @@ class TestResolveAccount:
     def test_none_when_nothing_set(self, tmp_path, monkeypatch):
         config_dir = tmp_path / "config"
         config_dir.mkdir()
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
         monkeypatch.setattr(
-            "my_cli.config.CONFIG_FILE", str(config_dir / "config.json")
+            "mxctl.config.CONFIG_FILE", str(config_dir / "config.json")
         )
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
 
         result = resolve_account(None)
         assert result is None

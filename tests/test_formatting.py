@@ -5,7 +5,7 @@ from argparse import Namespace
 
 import pytest
 
-from my_cli.util.formatting import die, format_output, output, truncate
+from mxctl.util.formatting import die, format_output, output, truncate
 
 
 class TestTruncate:

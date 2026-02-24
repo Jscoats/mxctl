@@ -1,13 +1,13 @@
 """System mail commands: check, headers, rules."""
 
-from my_cli.config import (
+from mxctl.config import (
     DEFAULT_MAILBOX,
     FIELD_SEPARATOR,
     resolve_account,
 )
-from my_cli.util.applescript import escape, run, validate_msg_id
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import parse_email_headers
+from mxctl.util.applescript import escape, run, validate_msg_id
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import parse_email_headers
 
 
 # ---------------------------------------------------------------------------

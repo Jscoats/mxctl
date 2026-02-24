@@ -13,14 +13,14 @@ def mock_run(monkeypatch):
     Also mocks inbox_iterator_all_accounts to avoid template dependency.
     """
     mock = Mock(return_value="")
-    monkeypatch.setattr("my_cli.util.applescript.run", mock)
+    monkeypatch.setattr("mxctl.util.applescript.run", mock)
 
     # Mock the template function to return a simple script
     def mock_template(inner_ops, cap=20, account=None):
         return 'tell application "Mail"\nset output to ""\nend tell'
 
     monkeypatch.setattr(
-        "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+        "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
         mock_template
     )
 

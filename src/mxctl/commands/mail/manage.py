@@ -2,10 +2,10 @@
 
 import subprocess
 
-from my_cli.config import resolve_account
-from my_cli.util.applescript import escape, run
-from my_cli.util.formatting import die, format_output
-from my_cli.util.mail_helpers import resolve_mailbox
+from mxctl.config import resolve_account
+from mxctl.util.applescript import escape, run
+from mxctl.util.formatting import die, format_output
+from mxctl.util.mail_helpers import resolve_mailbox
 
 
 def cmd_create_mailbox(args) -> None:

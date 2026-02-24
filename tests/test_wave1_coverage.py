@@ -44,43 +44,43 @@ class TestExtractDisplayName:
     """Unit tests for extract_display_name()."""
 
     def test_quoted_name_with_angle_brackets(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name('"John Doe" <john@example.com>')
         assert result == "John Doe"
 
     def test_unquoted_name_with_angle_brackets(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("John Doe <john@example.com>")
         assert result == "John Doe"
 
     def test_bare_email_returns_email(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("jane@example.com")
         assert result == "jane@example.com"
 
     def test_angle_bracket_only_no_name(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("<admin@site.org>")
         # No name before <, so returns empty string stripped
         assert result == ""
 
     def test_empty_string(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("")
         assert result == ""
 
     def test_trailing_whitespace_stripped(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("  Alice Smith  <alice@example.com>")
         assert result == "Alice Smith"
 
     def test_quoted_name_strips_quotes(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name('"Support Team" <support@company.com>')
         assert result == "Support Team"
 
     def test_multiword_name(self):
-        from my_cli.util.mail_helpers import extract_display_name
+        from mxctl.util.mail_helpers import extract_display_name
         result = extract_display_name("Mary Jane Watson <mj@example.com>")
         assert result == "Mary Jane Watson"
 
@@ -93,27 +93,27 @@ class TestVersionFlag:
     """Test that --version exits with the correct version string."""
 
     def test_version_flag_exits(self):
-        from my_cli.main import main
+        from mxctl.main import main
         with pytest.raises(SystemExit) as exc_info:
-            with patch("sys.argv", ["my", "--version"]):
+            with patch("sys.argv", ["mxctl", "--version"]):
                 main()
         # argparse --version exits with code 0
         assert exc_info.value.code == 0
 
     def test_version_flag_output(self, capsys):
-        from my_cli.main import main
+        from mxctl.main import main
         with pytest.raises(SystemExit):
-            with patch("sys.argv", ["my", "--version"]):
+            with patch("sys.argv", ["mxctl", "--version"]):
                 main()
         captured = capsys.readouterr()
         # argparse prints version to stdout
-        assert "my-apple-mail-cli" in captured.out or "my-apple-mail-cli" in captured.err
+        assert "mxctl" in captured.out or "mxctl" in captured.err
 
     def test_version_includes_semver(self, capsys):
-        from my_cli.main import main
-        from my_cli import __version__
+        from mxctl.main import main
+        from mxctl import __version__
         with pytest.raises(SystemExit):
-            with patch("sys.argv", ["my", "--version"]):
+            with patch("sys.argv", ["mxctl", "--version"]):
                 main()
         captured = capsys.readouterr()
         combined = captured.out + captured.err
@@ -128,19 +128,19 @@ class TestResolveMessageContextInitErrors:
     """Test the two distinct error messages when no account is configured."""
 
     def test_no_config_file_suggests_init(self, tmp_path, monkeypatch):
-        """When config file doesn't exist, error should mention 'my mail init'."""
-        from my_cli.util.mail_helpers import resolve_message_context
+        """When config file doesn't exist, error should mention 'mxctl init'."""
+        from mxctl.util.mail_helpers import resolve_message_context
 
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         config_file = config_dir / "config.json"
         # Config file does NOT exist
 
-        monkeypatch.setattr("my_cli.util.mail_helpers.CONFIG_FILE", str(config_file))
-        monkeypatch.setattr("my_cli.config.CONFIG_FILE", str(config_file))
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
-        monkeypatch.setattr("my_cli.config.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.util.mail_helpers.CONFIG_FILE", str(config_file))
+        monkeypatch.setattr("mxctl.config.CONFIG_FILE", str(config_file))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.resolve_account", lambda _: None)
 
         args = Namespace(account=None, mailbox=None)
         with pytest.raises(SystemExit) as exc_info:
@@ -149,7 +149,7 @@ class TestResolveMessageContextInitErrors:
 
     def test_config_exists_but_no_default_account(self, tmp_path, monkeypatch, capsys):
         """When config exists but no default is set, error mentions configure one."""
-        from my_cli.util.mail_helpers import resolve_message_context
+        from mxctl.util.mail_helpers import resolve_message_context
         import json as json_mod
 
         config_dir = tmp_path / "config"
@@ -158,11 +158,11 @@ class TestResolveMessageContextInitErrors:
         # Config file EXISTS but has no default_account
         config_file.write_text(json_mod.dumps({}))
 
-        monkeypatch.setattr("my_cli.util.mail_helpers.CONFIG_FILE", str(config_file))
-        monkeypatch.setattr("my_cli.config.CONFIG_FILE", str(config_file))
-        monkeypatch.setattr("my_cli.config.CONFIG_DIR", str(config_dir))
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(config_dir / "state.json"))
-        monkeypatch.setattr("my_cli.config.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.util.mail_helpers.CONFIG_FILE", str(config_file))
+        monkeypatch.setattr("mxctl.config.CONFIG_FILE", str(config_file))
+        monkeypatch.setattr("mxctl.config.CONFIG_DIR", str(config_dir))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(config_dir / "state.json"))
+        monkeypatch.setattr("mxctl.config.resolve_account", lambda _: None)
 
         args = Namespace(account=None, mailbox=None)
         with pytest.raises(SystemExit) as exc_info:
@@ -179,20 +179,20 @@ class TestWarnAutomationOnce:
 
     def test_warning_shown_on_first_call(self, capsys, tmp_path, monkeypatch):
         """Warning should print to stderr on first call in a fresh session."""
-        import my_cli.util.applescript as as_mod
+        import mxctl.util.applescript as as_mod
 
         # Reset the module-level flag
         monkeypatch.setattr(as_mod, "_automation_warned", False)
 
         state_file = tmp_path / "state.json"
         config_file = tmp_path / "config.json"
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(state_file))
-        monkeypatch.setattr("my_cli.config.CONFIG_FILE", str(config_file))
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(state_file))
+        monkeypatch.setattr("mxctl.config.CONFIG_FILE", str(config_file))
 
         # Mock get_state to return empty state (no automation_prompted)
-        monkeypatch.setattr("my_cli.config.get_state", lambda: {})
+        monkeypatch.setattr("mxctl.config.get_state", lambda: {})
         # Mock _save_json to avoid file writes
-        monkeypatch.setattr("my_cli.config._save_json", lambda *_: None)
+        monkeypatch.setattr("mxctl.config._save_json", lambda *_: None)
 
         as_mod._warn_automation_once()
 
@@ -201,12 +201,12 @@ class TestWarnAutomationOnce:
 
     def test_warning_not_repeated_in_same_session(self, capsys, tmp_path, monkeypatch):
         """After first call, subsequent calls should not print warning."""
-        import my_cli.util.applescript as as_mod
+        import mxctl.util.applescript as as_mod
 
         monkeypatch.setattr(as_mod, "_automation_warned", False)
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(tmp_path / "state.json"))
-        monkeypatch.setattr("my_cli.config.get_state", lambda: {})
-        monkeypatch.setattr("my_cli.config._save_json", lambda *_: None)
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(tmp_path / "state.json"))
+        monkeypatch.setattr("mxctl.config.get_state", lambda: {})
+        monkeypatch.setattr("mxctl.config._save_json", lambda *_: None)
 
         # First call — shows warning
         as_mod._warn_automation_once()
@@ -219,12 +219,12 @@ class TestWarnAutomationOnce:
 
     def test_warning_suppressed_if_already_prompted(self, capsys, tmp_path, monkeypatch):
         """If state shows automation_prompted=True, no warning is printed."""
-        import my_cli.util.applescript as as_mod
+        import mxctl.util.applescript as as_mod
 
         monkeypatch.setattr(as_mod, "_automation_warned", False)
-        monkeypatch.setattr("my_cli.config.STATE_FILE", str(tmp_path / "state.json"))
-        monkeypatch.setattr("my_cli.config.get_state", lambda: {"automation_prompted": True})
-        monkeypatch.setattr("my_cli.config._save_json", lambda *_: None)
+        monkeypatch.setattr("mxctl.config.STATE_FILE", str(tmp_path / "state.json"))
+        monkeypatch.setattr("mxctl.config.get_state", lambda: {"automation_prompted": True})
+        monkeypatch.setattr("mxctl.config._save_json", lambda *_: None)
 
         as_mod._warn_automation_once()
 
@@ -240,13 +240,13 @@ class TestCmdThreadEdgeCases:
     """Edge cases for cmd_thread."""
 
     def test_thread_empty_result_shows_no_thread_message(self, monkeypatch, capsys):
-        from my_cli.commands.mail.composite import cmd_thread
+        from mxctl.commands.mail.composite import cmd_thread
 
         mock_run = Mock(side_effect=[
             "Original Subject",  # first call: get subject
             "",                  # second call: no thread messages found
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=123, json=False, limit=100, all_accounts=False)
         cmd_thread(args)
@@ -255,13 +255,13 @@ class TestCmdThreadEdgeCases:
         assert "No thread found" in captured.out
 
     def test_thread_empty_result_json(self, monkeypatch, capsys):
-        from my_cli.commands.mail.composite import cmd_thread
+        from mxctl.commands.mail.composite import cmd_thread
 
         mock_run = Mock(side_effect=[
             "Test Subject",
             "",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=123, json=True, limit=100, all_accounts=False)
         cmd_thread(args)
@@ -271,13 +271,13 @@ class TestCmdThreadEdgeCases:
         assert data["messages"] == []
 
     def test_thread_all_accounts_flag(self, monkeypatch, capsys):
-        from my_cli.commands.mail.composite import cmd_thread
+        from mxctl.commands.mail.composite import cmd_thread
 
         mock_run = Mock(side_effect=[
             "Meeting Notes",
             f"50{chr(0x1F)}Meeting Notes{chr(0x1F)}alice@example.com{chr(0x1F)}Monday{chr(0x1F)}INBOX{chr(0x1F)}Work\n",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=50, json=False, limit=100, all_accounts=True)
         cmd_thread(args)
@@ -287,13 +287,13 @@ class TestCmdThreadEdgeCases:
         assert "every account" in second_script
 
     def test_thread_single_account_script(self, monkeypatch, capsys):
-        from my_cli.commands.mail.composite import cmd_thread
+        from mxctl.commands.mail.composite import cmd_thread
 
         mock_run = Mock(side_effect=[
             "Budget Review",
             f"77{chr(0x1F)}Budget Review{chr(0x1F)}bob@example.com{chr(0x1F)}Tuesday{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=77, json=False, limit=100, all_accounts=False)
         cmd_thread(args)
@@ -313,13 +313,13 @@ class TestCmdReplyEdgeCases:
 
     def test_reply_already_has_re_prefix(self, monkeypatch, capsys):
         """If subject already starts with Re:, don't double-prefix."""
-        from my_cli.commands.mail.composite import cmd_reply
+        from mxctl.commands.mail.composite import cmd_reply
 
         mock_run = Mock(side_effect=[
             f"Re: Original{chr(0x1F)}sender@example.com{chr(0x1F)}Monday{chr(0x1F)}Body text",
             "draft created",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=100, body="Thanks!", json=False)
         cmd_reply(args)
@@ -330,12 +330,12 @@ class TestCmdReplyEdgeCases:
 
     def test_reply_bad_sender_dies(self, monkeypatch):
         """If sender has no extractable email address, die() is called."""
-        from my_cli.commands.mail.composite import cmd_reply
+        from mxctl.commands.mail.composite import cmd_reply
 
         mock_run = Mock(return_value=(
             f"Subject{chr(0x1F)}NotAnEmail{chr(0x1F)}Monday{chr(0x1F)}Body"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=42, body="Hello", json=False)
         with pytest.raises(SystemExit) as exc_info:
@@ -344,10 +344,10 @@ class TestCmdReplyEdgeCases:
 
     def test_reply_insufficient_fields_dies(self, monkeypatch):
         """If AppleScript returns fewer than 4 fields, die()."""
-        from my_cli.commands.mail.composite import cmd_reply
+        from mxctl.commands.mail.composite import cmd_reply
 
         mock_run = Mock(return_value="OnlySubject")
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=42, body="Hello", json=False)
         with pytest.raises(SystemExit) as exc_info:
@@ -364,13 +364,13 @@ class TestCmdForwardEdgeCases:
 
     def test_forward_already_has_fwd_prefix(self, monkeypatch, capsys):
         """Subject already starting with Fwd: is not double-prefixed."""
-        from my_cli.commands.mail.composite import cmd_forward
+        from mxctl.commands.mail.composite import cmd_forward
 
         mock_run = Mock(side_effect=[
             f"Fwd: Original{chr(0x1F)}sender@example.com{chr(0x1F)}Monday{chr(0x1F)}Body",
             "draft created",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=55, to="fwd@example.com", json=False)
         cmd_forward(args)
@@ -381,12 +381,12 @@ class TestCmdForwardEdgeCases:
 
     def test_forward_bad_to_address_dies(self, monkeypatch):
         """If --to has no valid email address, die()."""
-        from my_cli.commands.mail.composite import cmd_forward
+        from mxctl.commands.mail.composite import cmd_forward
 
         mock_run = Mock(return_value=(
             f"Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Monday{chr(0x1F)}Body"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=42, to="not-a-valid-address", json=False)
         with pytest.raises(SystemExit) as exc_info:
@@ -395,10 +395,10 @@ class TestCmdForwardEdgeCases:
 
     def test_forward_insufficient_fields_dies(self, monkeypatch):
         """If AppleScript returns fewer than 4 fields, die()."""
-        from my_cli.commands.mail.composite import cmd_forward
+        from mxctl.commands.mail.composite import cmd_forward
 
         mock_run = Mock(return_value="OnlySubject")
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=42, to="someone@example.com", json=False)
         with pytest.raises(SystemExit) as exc_info:
@@ -407,13 +407,13 @@ class TestCmdForwardEdgeCases:
 
     def test_forward_formatted_to_address(self, monkeypatch, capsys):
         """--to can be a formatted 'Name <email>' string."""
-        from my_cli.commands.mail.composite import cmd_forward
+        from mxctl.commands.mail.composite import cmd_forward
 
         mock_run = Mock(side_effect=[
             f"Subject{chr(0x1F)}sender@example.com{chr(0x1F)}Monday{chr(0x1F)}Body",
             "draft created",
         ])
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _args(id=42, to="Alice Smith <alice@example.com>", json=False)
         cmd_forward(args)
@@ -432,10 +432,10 @@ class TestCmdTopSendersEdgeCases:
     """Edge cases for cmd_top_senders."""
 
     def test_empty_result_shows_no_messages(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_top_senders
+        from mxctl.commands.mail.analytics import cmd_top_senders
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(days=30, limit=10, json=False)
         cmd_top_senders(args)
@@ -444,10 +444,10 @@ class TestCmdTopSendersEdgeCases:
         assert "No messages found" in captured.out
 
     def test_empty_result_json(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_top_senders
+        from mxctl.commands.mail.analytics import cmd_top_senders
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(days=30, limit=10, json=True)
         cmd_top_senders(args)
@@ -458,7 +458,7 @@ class TestCmdTopSendersEdgeCases:
         assert data["days"] == 30
 
     def test_senders_sorted_by_frequency(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_top_senders
+        from mxctl.commands.mail.analytics import cmd_top_senders
 
         # alice appears 3x, bob 1x — alice should be first
         mock_run = Mock(return_value=(
@@ -467,7 +467,7 @@ class TestCmdTopSendersEdgeCases:
             "alice@example.com\n"
             "alice@example.com\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(days=7, limit=5, json=False)
         cmd_top_senders(args)
@@ -478,14 +478,14 @@ class TestCmdTopSendersEdgeCases:
         assert alice_pos < bob_pos  # alice listed before bob
 
     def test_limit_respected(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_top_senders
+        from mxctl.commands.mail.analytics import cmd_top_senders
 
         # 5 unique senders but limit=3
         senders = "\n".join([
             "a@x.com", "b@x.com", "c@x.com", "d@x.com", "e@x.com"
         ])
         mock_run = Mock(return_value=senders)
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(days=30, limit=3, json=False)
         cmd_top_senders(args)
@@ -505,10 +505,10 @@ class TestCmdDigestEdgeCases:
     """Edge cases for cmd_digest."""
 
     def test_empty_result_inbox_zero(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_digest
+        from mxctl.commands.mail.analytics import cmd_digest
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(json=False)
         cmd_digest(args)
@@ -517,7 +517,7 @@ class TestCmdDigestEdgeCases:
         assert "inbox zero" in captured.out.lower() or "No unread" in captured.out
 
     def test_groups_by_domain(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_digest
+        from mxctl.commands.mail.analytics import cmd_digest
 
         # Two messages from same domain, one from different
         mock_run = Mock(return_value=(
@@ -525,7 +525,7 @@ class TestCmdDigestEdgeCases:
             f"iCloud{chr(0x1F)}2{chr(0x1F)}Promo{chr(0x1F)}promo@example.com{chr(0x1F)}Tuesday\n"
             f"iCloud{chr(0x1F)}3{chr(0x1F)}Alert{chr(0x1F)}noreply@other.org{chr(0x1F)}Wednesday\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(json=False)
         cmd_digest(args)
@@ -536,12 +536,12 @@ class TestCmdDigestEdgeCases:
         assert "3 messages" in captured.out
 
     def test_skips_malformed_lines(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_digest
+        from mxctl.commands.mail.analytics import cmd_digest
 
         good = f"iCloud{chr(0x1F)}5{chr(0x1F)}Hello{chr(0x1F)}friend@example.com{chr(0x1F)}Friday"
         bad = "malformed"
         mock_run = Mock(return_value=f"{good}\n{bad}\n")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(json=False)
         cmd_digest(args)
@@ -560,10 +560,10 @@ class TestCmdShowFlaggedEdgeCases:
     """Edge cases for cmd_show_flagged."""
 
     def test_no_flagged_messages(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_show_flagged
+        from mxctl.commands.mail.analytics import cmd_show_flagged
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(limit=25, json=False)
         cmd_show_flagged(args)
@@ -572,10 +572,10 @@ class TestCmdShowFlaggedEdgeCases:
         assert "No flagged messages" in captured.out
 
     def test_no_flagged_messages_json(self, monkeypatch, capsys):
-        from my_cli.commands.mail.analytics import cmd_show_flagged
+        from mxctl.commands.mail.analytics import cmd_show_flagged
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(limit=25, json=True)
         cmd_show_flagged(args)
@@ -586,15 +586,15 @@ class TestCmdShowFlaggedEdgeCases:
 
     def test_no_account_scopes_all_accounts_script(self, monkeypatch, capsys):
         """When account resolves to None, the script should iterate every account."""
-        from my_cli.commands.mail.analytics import cmd_show_flagged
+        from mxctl.commands.mail.analytics import cmd_show_flagged
 
         # Ensure resolve_account returns None so the all-accounts branch is taken
-        monkeypatch.setattr("my_cli.commands.mail.analytics.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.resolve_account", lambda _: None)
 
         mock_run = Mock(return_value=(
             f"99{chr(0x1F)}Flagged{chr(0x1F)}x@y.com{chr(0x1F)}Monday{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = Namespace(json=False, account=None, mailbox="INBOX", limit=25)
         cmd_show_flagged(args)
@@ -604,12 +604,12 @@ class TestCmdShowFlaggedEdgeCases:
 
     def test_with_account_scopes_single_account_script(self, monkeypatch, capsys):
         """When account is set, the script should scope to that account."""
-        from my_cli.commands.mail.analytics import cmd_show_flagged
+        from mxctl.commands.mail.analytics import cmd_show_flagged
 
         mock_run = Mock(return_value=(
             f"88{chr(0x1F)}Task{chr(0x1F)}z@w.com{chr(0x1F)}Tuesday{chr(0x1F)}INBOX{chr(0x1F)}iCloud\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.analytics.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.analytics.run", mock_run)
 
         args = _args(limit=25, json=False)
         cmd_show_flagged(args)
@@ -628,11 +628,11 @@ class TestCmdHeadersEdgeCases:
 
     def test_raw_mode_prints_directly(self, monkeypatch, capsys):
         """--raw flag prints raw headers without parsing."""
-        from my_cli.commands.mail.system import cmd_headers
+        from mxctl.commands.mail.system import cmd_headers
 
         raw = "From: raw@example.com\nX-Custom: value"
         mock_run = Mock(return_value=raw)
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(id=1, json=False, raw=True)
         cmd_headers(args)
@@ -643,7 +643,7 @@ class TestCmdHeadersEdgeCases:
 
     def test_dmarc_fail_detected(self, monkeypatch, capsys):
         """DMARC fail should show FAIL in auth summary."""
-        from my_cli.commands.mail.system import cmd_headers
+        from mxctl.commands.mail.system import cmd_headers
 
         raw_headers = (
             "From: phish@example.com\n"
@@ -654,7 +654,7 @@ class TestCmdHeadersEdgeCases:
             "Authentication-Results: mx.example.com; spf=fail dkim=fail dmarc=fail\n"
         )
         mock_run = Mock(return_value=raw_headers)
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(id=42, json=False, raw=False)
         cmd_headers(args)
@@ -664,7 +664,7 @@ class TestCmdHeadersEdgeCases:
 
     def test_reply_to_shown_when_present(self, monkeypatch, capsys):
         """Reply-To header should appear in output when present."""
-        from my_cli.commands.mail.system import cmd_headers
+        from mxctl.commands.mail.system import cmd_headers
 
         raw_headers = (
             "From: sender@example.com\n"
@@ -675,7 +675,7 @@ class TestCmdHeadersEdgeCases:
             "Reply-To: replies@example.com\n"
         )
         mock_run = Mock(return_value=raw_headers)
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(id=10, json=False, raw=False)
         cmd_headers(args)
@@ -685,7 +685,7 @@ class TestCmdHeadersEdgeCases:
 
     def test_list_unsubscribe_shown(self, monkeypatch, capsys):
         """List-Unsubscribe header should appear truncated in output."""
-        from my_cli.commands.mail.system import cmd_headers
+        from mxctl.commands.mail.system import cmd_headers
 
         raw_headers = (
             "From: news@example.com\n"
@@ -696,7 +696,7 @@ class TestCmdHeadersEdgeCases:
             "List-Unsubscribe: <https://example.com/unsub?token=abc123>\n"
         )
         mock_run = Mock(return_value=raw_headers)
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(id=20, json=False, raw=False)
         cmd_headers(args)
@@ -706,7 +706,7 @@ class TestCmdHeadersEdgeCases:
 
     def test_hop_count_with_no_received_headers(self, monkeypatch, capsys):
         """Messages with no Received: headers should show Hops: 0."""
-        from my_cli.commands.mail.system import cmd_headers
+        from mxctl.commands.mail.system import cmd_headers
 
         raw_headers = (
             "From: sender@example.com\n"
@@ -716,7 +716,7 @@ class TestCmdHeadersEdgeCases:
             "Message-Id: <direct@example.com>\n"
         )
         mock_run = Mock(return_value=raw_headers)
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(id=30, json=False, raw=False)
         cmd_headers(args)
@@ -734,10 +734,10 @@ class TestCmdRulesEdgeCases:
 
     def test_enable_rule(self, monkeypatch, capsys):
         """cmd_rules enable RULENAME should call toggle with enabled=True."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="Move Newsletters")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=False, action="enable", rule_name="Move Newsletters")
         cmd_rules(args)
@@ -748,10 +748,10 @@ class TestCmdRulesEdgeCases:
 
     def test_disable_rule(self, monkeypatch, capsys):
         """cmd_rules disable RULENAME should call toggle with enabled=False."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="Archive Old Mail")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=False, action="disable", rule_name="Archive Old Mail")
         cmd_rules(args)
@@ -762,10 +762,10 @@ class TestCmdRulesEdgeCases:
 
     def test_enable_rule_json(self, monkeypatch, capsys):
         """cmd_rules enable --json returns JSON with status."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="Newsletter Rule")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=True, action="enable", rule_name="Newsletter Rule")
         cmd_rules(args)
@@ -777,10 +777,10 @@ class TestCmdRulesEdgeCases:
 
     def test_no_rules_found(self, monkeypatch, capsys):
         """When rules list is empty, a friendly message is shown."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=False, action=None, rule_name=None)
         cmd_rules(args)
@@ -790,10 +790,10 @@ class TestCmdRulesEdgeCases:
 
     def test_enable_rule_applescript_uses_true(self, monkeypatch, capsys):
         """When enabling, AppleScript should set enabled to true (not false)."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="My Rule")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=False, action="enable", rule_name="My Rule")
         cmd_rules(args)
@@ -804,10 +804,10 @@ class TestCmdRulesEdgeCases:
 
     def test_disable_rule_applescript_uses_false(self, monkeypatch, capsys):
         """When disabling, AppleScript should set enabled to false."""
-        from my_cli.commands.mail.system import cmd_rules
+        from mxctl.commands.mail.system import cmd_rules
 
         mock_run = Mock(return_value="My Rule")
-        monkeypatch.setattr("my_cli.commands.mail.system.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.system.run", mock_run)
 
         args = _args(json=False, action="disable", rule_name="My Rule")
         cmd_rules(args)
@@ -825,11 +825,11 @@ class TestCmdAttachmentsEdgeCases:
 
     def test_no_attachments_shows_friendly_message(self, monkeypatch, capsys):
         """Message with no attachments should show a friendly message."""
-        from my_cli.commands.mail.attachments import cmd_attachments
+        from mxctl.commands.mail.attachments import cmd_attachments
 
         # Only one line = subject, no attachment lines
         mock_run = Mock(return_value="Email Without Attachments")
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         args = _args(id=42, json=False)
         cmd_attachments(args)
@@ -839,10 +839,10 @@ class TestCmdAttachmentsEdgeCases:
 
     def test_no_attachments_json(self, monkeypatch, capsys):
         """Empty attachment list in JSON mode returns empty list."""
-        from my_cli.commands.mail.attachments import cmd_attachments
+        from mxctl.commands.mail.attachments import cmd_attachments
 
         mock_run = Mock(return_value="Plain Email")
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         args = _args(id=42, json=True)
         cmd_attachments(args)
@@ -854,7 +854,7 @@ class TestCmdAttachmentsEdgeCases:
 
     def test_multiple_attachments_numbered(self, monkeypatch, capsys):
         """Multiple attachments should be listed with numbers."""
-        from my_cli.commands.mail.attachments import cmd_attachments
+        from mxctl.commands.mail.attachments import cmd_attachments
 
         mock_run = Mock(return_value=(
             "Contract Email\n"
@@ -862,7 +862,7 @@ class TestCmdAttachmentsEdgeCases:
             "addendum.docx\n"
             "signature.png\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         args = _args(id=99, json=False)
         cmd_attachments(args)
@@ -874,14 +874,14 @@ class TestCmdAttachmentsEdgeCases:
 
     def test_attachments_json_includes_list(self, monkeypatch, capsys):
         """JSON output includes subject and full attachment list."""
-        from my_cli.commands.mail.attachments import cmd_attachments
+        from mxctl.commands.mail.attachments import cmd_attachments
 
         mock_run = Mock(return_value=(
             "Weekly Report\n"
             "data.csv\n"
             "summary.pdf\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.attachments.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.attachments.run", mock_run)
 
         args = _args(id=10, json=True)
         cmd_attachments(args)

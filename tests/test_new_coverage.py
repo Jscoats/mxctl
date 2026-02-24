@@ -16,7 +16,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 import pytest
 
-from my_cli.config import FIELD_SEPARATOR
+from mxctl.config import FIELD_SEPARATOR
 
 
 # ---------------------------------------------------------------------------
@@ -41,37 +41,37 @@ class TestUnsubscribePrivateIpValidation:
     """Test _is_private_url() rejects private/loopback addresses."""
 
     def test_private_ip_10_x(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", return_value="10.0.0.1"):
             assert _is_private_url("http://internal.corp/unsub") is True
 
     def test_private_ip_172_16(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", return_value="172.20.0.1"):
             assert _is_private_url("http://internal.corp/unsub") is True
 
     def test_private_ip_192_168(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", return_value="192.168.1.1"):
             assert _is_private_url("http://router.local/unsub") is True
 
     def test_loopback_127(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", return_value="127.0.0.1"):
             assert _is_private_url("http://localhost/unsub") is True
 
     def test_public_ip_allowed(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", return_value="93.184.216.34"):
             assert _is_private_url("https://example.com/unsub") is False
 
     def test_dns_failure_blocks(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         with patch("socket.gethostbyname", side_effect=socket.gaierror("NXDOMAIN")):
             assert _is_private_url("https://nonexistent.invalid/unsub") is True
 
     def test_missing_hostname_blocks(self):
-        from my_cli.commands.mail.actions import _is_private_url
+        from mxctl.commands.mail.actions import _is_private_url
         # URL with no hostname
         assert _is_private_url("file:///etc/hosts") is True
 
@@ -79,9 +79,9 @@ class TestUnsubscribePrivateIpValidation:
 class TestUnsubscribeDryRun:
     """Test unsubscribe --dry-run: shows info without making HTTP requests."""
 
-    @patch("my_cli.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions.run")
     def test_dry_run_shows_links(self, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         header_value = "<https://example.com/unsub>"
         mock_run.return_value = (
@@ -97,9 +97,9 @@ class TestUnsubscribeDryRun:
         assert "Unsubscribe info" in out
         assert "https://example.com/unsub" in out
 
-    @patch("my_cli.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions.run")
     def test_dry_run_json(self, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         header_value = "<https://example.com/unsub>, <mailto:unsub@example.com>"
         mock_run.return_value = (
@@ -118,9 +118,9 @@ class TestUnsubscribeDryRun:
         assert data["https_urls"] == ["https://example.com/unsub"]
         assert data["mailto_urls"] == ["mailto:unsub@example.com"]
 
-    @patch("my_cli.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions.run")
     def test_no_unsubscribe_header(self, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         mock_run.return_value = (
             f"Regular Email"
@@ -138,11 +138,11 @@ class TestUnsubscribeDryRun:
 class TestUnsubscribeOneClick:
     """Test the RFC 8058 one-click POST path."""
 
-    @patch("my_cli.commands.mail.actions.run")
-    @patch("my_cli.commands.mail.actions._is_private_url", return_value=False)
-    @patch("my_cli.commands.mail.actions.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions._is_private_url", return_value=False)
+    @patch("mxctl.commands.mail.actions.urllib.request.urlopen")
     def test_one_click_success(self, mock_urlopen, mock_private, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         # One-click requires List-Unsubscribe-Post header
         mock_run.return_value = (
@@ -168,10 +168,10 @@ class TestUnsubscribeOneClick:
         # Confirm a POST was attempted
         assert mock_urlopen.called
 
-    @patch("my_cli.commands.mail.actions.run")
-    @patch("my_cli.commands.mail.actions._is_private_url", return_value=True)
+    @patch("mxctl.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions._is_private_url", return_value=True)
     def test_one_click_private_url_dies(self, mock_private, mock_run):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         mock_run.return_value = (
             f"Promo Newsletter"
@@ -185,13 +185,13 @@ class TestUnsubscribeOneClick:
             cmd_unsubscribe(args)
         assert exc_info.value.code == 1
 
-    @patch("my_cli.commands.mail.actions.run")
-    @patch("my_cli.commands.mail.actions._is_private_url", return_value=False)
-    @patch("my_cli.commands.mail.actions.urllib.request.urlopen")
-    @patch("my_cli.commands.mail.actions.subprocess.run")
+    @patch("mxctl.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions._is_private_url", return_value=False)
+    @patch("mxctl.commands.mail.actions.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.actions.subprocess.run")
     def test_one_click_fallback_to_browser(self, mock_subprocess, mock_urlopen, mock_private, mock_run, capsys):
         """When one-click POST fails, fall back to opening the browser."""
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
         import urllib.error
 
         mock_run.return_value = (
@@ -215,10 +215,10 @@ class TestUnsubscribeOneClick:
 class TestUnsubscribeBrowserFallback:
     """Test the browser fallback (HTTPS only, no one-click)."""
 
-    @patch("my_cli.commands.mail.actions.run")
-    @patch("my_cli.commands.mail.actions.subprocess.run")
+    @patch("mxctl.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions.subprocess.run")
     def test_opens_browser_when_no_one_click(self, mock_subprocess, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         mock_run.return_value = (
             f"Digest"
@@ -237,9 +237,9 @@ class TestUnsubscribeBrowserFallback:
         assert "open" in cmd_args
         assert "https://example.com/unsub" in cmd_args
 
-    @patch("my_cli.commands.mail.actions.run")
+    @patch("mxctl.commands.mail.actions.run")
     def test_mailto_only_shows_address(self, mock_run, capsys):
-        from my_cli.commands.mail.actions import cmd_unsubscribe
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         mock_run.return_value = (
             f"Old Newsletter"
@@ -258,19 +258,19 @@ class TestExtractUrls:
     """Unit tests for _extract_urls."""
 
     def test_extracts_https(self):
-        from my_cli.commands.mail.actions import _extract_urls
+        from mxctl.commands.mail.actions import _extract_urls
         https, mailto = _extract_urls("<https://example.com/unsub>")
         assert https == ["https://example.com/unsub"]
         assert mailto == []
 
     def test_extracts_mailto(self):
-        from my_cli.commands.mail.actions import _extract_urls
+        from mxctl.commands.mail.actions import _extract_urls
         https, mailto = _extract_urls("<mailto:unsub@example.com>")
         assert https == []
         assert mailto == ["mailto:unsub@example.com"]
 
     def test_extracts_both(self):
-        from my_cli.commands.mail.actions import _extract_urls
+        from mxctl.commands.mail.actions import _extract_urls
         https, mailto = _extract_urls(
             "<https://example.com/unsub>, <mailto:unsub@example.com>"
         )
@@ -278,7 +278,7 @@ class TestExtractUrls:
         assert mailto == ["mailto:unsub@example.com"]
 
     def test_empty_header(self):
-        from my_cli.commands.mail.actions import _extract_urls
+        from mxctl.commands.mail.actions import _extract_urls
         https, mailto = _extract_urls("")
         assert https == []
         assert mailto == []
@@ -304,12 +304,12 @@ class TestTodoistIntegration:
         defaults.update(kwargs)
         return Namespace(**defaults)
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_success_without_project(self, mock_urlopen, mock_config, mock_run, capsys):
         """Task created in Todoist inbox when --project is not provided."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -338,12 +338,12 @@ class TestTodoistIntegration:
         # Only one urlopen call (no project lookup)
         assert mock_urlopen.call_count == 1
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_success_with_project(self, mock_urlopen, mock_config, mock_run, capsys):
         """When --project is set, resolves project ID first, then creates task."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -377,12 +377,12 @@ class TestTodoistIntegration:
         # Two calls: project lookup + task creation
         assert mock_urlopen.call_count == 2
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_project_not_found_dies(self, mock_urlopen, mock_config, mock_run):
         """When named project doesn't exist, die() is called."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -400,10 +400,10 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
     def test_missing_api_token_dies(self, mock_config, capsys):
         """Should die() when todoist_api_token not in config."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {}  # No token
 
@@ -412,13 +412,13 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_http_error_dies(self, mock_urlopen, mock_config, mock_run):
         """When Todoist API returns HTTP error, die() is called."""
         import urllib.error
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -440,12 +440,12 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_creates_task_json_output(self, mock_urlopen, mock_config, mock_run, capsys):
         """--json flag returns structured task data."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -475,9 +475,9 @@ class TestTodoistIntegration:
 class TestProcessInbox:
     """Smoke tests for cmd_process_inbox."""
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_empty_inbox(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         mock_run.return_value = ""
         args = mock_args()
@@ -486,9 +486,9 @@ class TestProcessInbox:
         out = capsys.readouterr().out
         assert "No unread messages" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_categorizes_flagged(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         # One flagged message from a real person
         row = (
@@ -505,9 +505,9 @@ class TestProcessInbox:
         assert "FLAGGED" in out
         assert "Important Notice" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_categorizes_notifications(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         row = (
             f"iCloud{FIELD_SEPARATOR}202{FIELD_SEPARATOR}"
@@ -522,9 +522,9 @@ class TestProcessInbox:
         out = capsys.readouterr().out
         assert "NOTIFICATIONS" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_categorizes_people(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         row = (
             f"iCloud{FIELD_SEPARATOR}303{FIELD_SEPARATOR}"
@@ -539,9 +539,9 @@ class TestProcessInbox:
         out = capsys.readouterr().out
         assert "PEOPLE" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_json_output(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         row = (
             f"iCloud{FIELD_SEPARATOR}404{FIELD_SEPARATOR}"
@@ -560,9 +560,9 @@ class TestProcessInbox:
         assert "people" in data
         assert "notifications" in data
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_skips_malformed_lines(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_process_inbox
+        from mxctl.commands.mail.inbox_tools import cmd_process_inbox
 
         # Good line + malformed line (not enough fields)
         good = (
@@ -584,9 +584,9 @@ class TestProcessInbox:
 class TestCleanNewsletters:
     """Smoke tests for cmd_clean_newsletters."""
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_empty_mailbox(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
         mock_run.return_value = ""
         args = mock_args()
@@ -595,9 +595,9 @@ class TestCleanNewsletters:
         out = capsys.readouterr().out
         assert "No messages found" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_identifies_noreply_sender(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
         # Two rows from a noreply sender
         row1 = f"noreply@news.com{FIELD_SEPARATOR}true"
@@ -610,9 +610,9 @@ class TestCleanNewsletters:
         out = capsys.readouterr().out
         assert "noreply@news.com" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_identifies_bulk_sender(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
         # Same sender 4 times (>= 3 is threshold)
         rows = "\n".join(
@@ -626,9 +626,9 @@ class TestCleanNewsletters:
         out = capsys.readouterr().out
         assert "digest@weekly.com" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_no_newsletters_found(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
         # One unique sender — not a newsletter
         row = f"alice@example.com{FIELD_SEPARATOR}true"
@@ -640,9 +640,9 @@ class TestCleanNewsletters:
         out = capsys.readouterr().out
         assert "No newsletter senders" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_json_output(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_clean_newsletters
+        from mxctl.commands.mail.inbox_tools import cmd_clean_newsletters
 
         rows = "\n".join(
             f"updates@service.com{FIELD_SEPARATOR}false" for _ in range(3)
@@ -661,9 +661,9 @@ class TestCleanNewsletters:
 class TestWeeklyReview:
     """Smoke tests for cmd_weekly_review."""
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_all_empty(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
         mock_run.return_value = ""
         args = mock_args(days=7)
@@ -673,9 +673,9 @@ class TestWeeklyReview:
         assert "Weekly Review" in out
         assert "Flagged Messages" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_shows_flagged(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
         flagged_row = (
             f"111{FIELD_SEPARATOR}Action Required{FIELD_SEPARATOR}"
@@ -694,9 +694,9 @@ class TestWeeklyReview:
         out = capsys.readouterr().out
         assert "Action Required" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_shows_attachments(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
         attach_row = (
             f"222{FIELD_SEPARATOR}Budget Q1{FIELD_SEPARATOR}"
@@ -715,9 +715,9 @@ class TestWeeklyReview:
         assert "Budget Q1" in out
         assert "3 attachments" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_unreplied_skips_noreply(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
         noreply_row = (
             f"333{FIELD_SEPARATOR}Notification{FIELD_SEPARATOR}"
@@ -736,9 +736,9 @@ class TestWeeklyReview:
         # noreply sender should be filtered out
         assert "Unreplied from People (0)" in out
 
-    @patch("my_cli.commands.mail.inbox_tools.run")
+    @patch("mxctl.commands.mail.inbox_tools.run")
     def test_json_output(self, mock_run, capsys, mock_args):
-        from my_cli.commands.mail.inbox_tools import cmd_weekly_review
+        from mxctl.commands.mail.inbox_tools import cmd_weekly_review
 
         mock_run.return_value = ""
         args = mock_args(days=7, json=True)
@@ -761,17 +761,17 @@ class TestExportBulk:
 
     def _run_export_bulk(self, monkeypatch, mock_result: str, dest_dir: str):
         """Helper to invoke _export_bulk with a mocked AppleScript run."""
-        from my_cli.commands.mail.composite import _export_bulk
+        from mxctl.commands.mail.composite import _export_bulk
 
         mock_run = Mock(return_value=mock_result)
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _make_args(after=None)
         _export_bulk(args, "INBOX", "iCloud", dest_dir, after=None)
         return mock_run
 
     def test_single_message_exported(self, monkeypatch, tmp_path, capsys):
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.config import RECORD_SEPARATOR
 
         msg_data = (
             f"42{FIELD_SEPARATOR}"
@@ -794,7 +794,7 @@ class TestExportBulk:
         assert "This is the body." in content
 
     def test_multiple_messages_exported(self, monkeypatch, tmp_path, capsys):
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.config import RECORD_SEPARATOR
 
         def make_record(msg_id, subject, body):
             return (
@@ -824,7 +824,7 @@ class TestExportBulk:
         assert "Exported 0" in out
 
     def test_skips_malformed_entries(self, monkeypatch, tmp_path, capsys):
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.config import RECORD_SEPARATOR
 
         good = (
             f"10{FIELD_SEPARATOR}"
@@ -843,7 +843,7 @@ class TestExportBulk:
 
     def test_body_with_field_separator(self, monkeypatch, tmp_path, capsys):
         """Body content containing FIELD_SEPARATOR should be preserved."""
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.config import RECORD_SEPARATOR
 
         body_with_sep = f"Line 1{FIELD_SEPARATOR}Line 2 (continuation)"
         record = (
@@ -865,7 +865,7 @@ class TestExportBulk:
 
     def test_export_creates_dest_dir(self, monkeypatch, tmp_path, capsys):
         """_export_bulk creates the destination directory if it doesn't exist."""
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.config import RECORD_SEPARATOR
 
         new_dir = str(tmp_path / "new_subdir")
         assert not os.path.exists(new_dir)
@@ -886,8 +886,8 @@ class TestExportBulk:
         assert "Exported 1" in out
 
     def test_json_output(self, monkeypatch, tmp_path, capsys):
-        from my_cli.commands.mail.composite import _export_bulk
-        from my_cli.config import RECORD_SEPARATOR
+        from mxctl.commands.mail.composite import _export_bulk
+        from mxctl.config import RECORD_SEPARATOR
 
         msg_data = (
             f"9{FIELD_SEPARATOR}"
@@ -899,7 +899,7 @@ class TestExportBulk:
         result = msg_data + RECORD_SEPARATOR
 
         mock_run = Mock(return_value=result)
-        monkeypatch.setattr("my_cli.commands.mail.composite.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.composite.run", mock_run)
 
         args = _make_args(after=None, json=True)
         _export_bulk(args, "INBOX", "iCloud", str(tmp_path), after=None)
@@ -918,7 +918,7 @@ class TestParseMessageLine:
     """Test the parse_message_line() helper added in the refactor."""
 
     def test_basic_parse(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"42{FIELD_SEPARATOR}Hello{FIELD_SEPARATOR}alice@x.com{FIELD_SEPARATOR}Monday"
         result = parse_message_line(line, ["id", "subject", "sender", "date"], FIELD_SEPARATOR)
@@ -930,7 +930,7 @@ class TestParseMessageLine:
         assert result["date"] == "Monday"
 
     def test_id_coercion_to_int(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"123{FIELD_SEPARATOR}Subject"
         result = parse_message_line(line, ["id", "subject"], FIELD_SEPARATOR)
@@ -938,28 +938,28 @@ class TestParseMessageLine:
         assert isinstance(result["id"], int)
 
     def test_non_numeric_id_kept_as_string(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"abc{FIELD_SEPARATOR}Subject"
         result = parse_message_line(line, ["id", "subject"], FIELD_SEPARATOR)
         assert result["id"] == "abc"
 
     def test_bool_field_coercion_true(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"1{FIELD_SEPARATOR}true"
         result = parse_message_line(line, ["id", "flagged"], FIELD_SEPARATOR)
         assert result["flagged"] is True
 
     def test_bool_field_coercion_false(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"2{FIELD_SEPARATOR}false"
         result = parse_message_line(line, ["id", "read"], FIELD_SEPARATOR)
         assert result["read"] is False
 
     def test_last_field_absorbs_remainder(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         body = f"part1{FIELD_SEPARATOR}part2{FIELD_SEPARATOR}part3"
         line = f"5{FIELD_SEPARATOR}{body}"
@@ -967,14 +967,14 @@ class TestParseMessageLine:
         assert result["body"] == body
 
     def test_insufficient_fields_returns_none(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = "only_one_field"
         result = parse_message_line(line, ["id", "subject", "sender"], FIELD_SEPARATOR)
         assert result is None
 
     def test_exactly_minimum_fields(self):
-        from my_cli.util.mail_helpers import parse_message_line
+        from mxctl.util.mail_helpers import parse_message_line
 
         line = f"7{FIELD_SEPARATOR}Subject Only"
         result = parse_message_line(line, ["id", "subject"], FIELD_SEPARATOR)
@@ -1003,10 +1003,10 @@ class TestTodoistTimeoutAndTokenValidation:
         defaults.update(kwargs)
         return Namespace(**defaults)
 
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
     def test_empty_string_token_dies(self, mock_config, capsys):
         """Empty-string token (passes 'if not token' check but is invalid) is caught early."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "   "}  # whitespace-only
 
@@ -1017,13 +1017,13 @@ class TestTodoistTimeoutAndTokenValidation:
         out = capsys.readouterr()
         assert "invalid" in out.err.lower() or "invalid" in out.out.lower()
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_socket_timeout_on_task_create_dies(self, mock_urlopen, mock_config, mock_run, capsys):
         """socket.timeout during task creation produces a clean error (no hang)."""
         import socket
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -1038,13 +1038,13 @@ class TestTodoistTimeoutAndTokenValidation:
         out = capsys.readouterr()
         assert "timed out" in out.err.lower() or "timeout" in out.err.lower()
 
-    @patch("my_cli.commands.mail.todoist_integration.run")
-    @patch("my_cli.commands.mail.todoist_integration.get_config")
-    @patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen")
+    @patch("mxctl.commands.mail.todoist_integration.run")
+    @patch("mxctl.commands.mail.todoist_integration.get_config")
+    @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_urlopen_has_timeout_kwarg(self, mock_urlopen, mock_config, mock_run, capsys):
         """urlopen is called with an explicit timeout= kwarg (prevents silent hang)."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
-        from my_cli.config import APPLESCRIPT_TIMEOUT_SHORT
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
@@ -1077,7 +1077,7 @@ class TestNotJunkSubjectSenderSearch:
         """_try_not_junk_in_mailbox builds subject+sender AppleScript when args are given."""
         import subprocess as _subprocess
         from unittest.mock import patch, MagicMock
-        from my_cli.commands.mail.actions import _try_not_junk_in_mailbox
+        from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -1100,7 +1100,7 @@ class TestNotJunkSubjectSenderSearch:
         """_try_not_junk_in_mailbox uses ID lookup when subject/sender are empty."""
         import subprocess as _subprocess
         from unittest.mock import patch, MagicMock
-        from my_cli.commands.mail.actions import _try_not_junk_in_mailbox
+        from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -1120,7 +1120,7 @@ class TestNotJunkSubjectSenderSearch:
         """Any AppleScript error returns None (no internal error leaks to user)."""
         import subprocess as _subprocess
         from unittest.mock import patch, MagicMock
-        from my_cli.commands.mail.actions import _try_not_junk_in_mailbox
+        from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -1139,8 +1139,8 @@ class TestNotJunkSubjectSenderSearch:
         import subprocess as _subprocess
         from argparse import Namespace
         from unittest.mock import MagicMock, patch
-        from my_cli.commands.mail.actions import cmd_not_junk
-        from my_cli.config import FIELD_SEPARATOR
+        from mxctl.commands.mail.actions import cmd_not_junk
+        from mxctl.config import FIELD_SEPARATOR
 
         # Simulate successful fetch of subject+sender from INBOX
         fetch_result = MagicMock()
@@ -1151,7 +1151,7 @@ class TestNotJunkSubjectSenderSearch:
 
         with patch.object(_subprocess, "run", return_value=fetch_result):
             monkeypatch.setattr(
-                "my_cli.commands.mail.actions._try_not_junk_in_mailbox",
+                "mxctl.commands.mail.actions._try_not_junk_in_mailbox",
                 helper_mock,
             )
             args = Namespace(id=100, account="iCloud", mailbox=None, json=False)

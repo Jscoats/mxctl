@@ -6,10 +6,10 @@ import sys
 import tty
 import termios
 
-from my_cli import __version__
-from my_cli.config import CONFIG_DIR, CONFIG_FILE, FIELD_SEPARATOR, get_config, _save_json  # noqa: F401 — CONFIG_DIR imported for test monkeypatching
-from my_cli.util.applescript import run
-from my_cli.util.formatting import format_output
+from mxctl import __version__
+from mxctl.config import CONFIG_DIR, CONFIG_FILE, FIELD_SEPARATOR, get_config, _save_json  # noqa: F401 — CONFIG_DIR imported for test monkeypatching
+from mxctl.util.applescript import run
+from mxctl.util.formatting import format_output
 
 # ANSI helpers
 _G = "\x1b[1;32m"   # bold green
@@ -20,14 +20,12 @@ _R = "\x1b[0m"      # reset
 _W = "\x1b[1;37m"   # bold white
 
 _BANNER = f"""{_C}
-                                   _ _
-                                  (_) |
- _ __ ___  _   _   _ __ ___   __ _ _| |
-| '_ ` _ \\| | | | | '_ ` _ \\ / _` | | |
-| | | | | | |_| | | | | | | | (_| | | |
-|_| |_| |_|\\__, | |_| |_| |_|\\__,_|_|_|
-            __/ |
-           |___/{_R}
+                    _   _
+                   | | | |
+ _ __ _____  ___| |_| |
+| '_ ` _ \\ \\/ / __| __| |
+| | | | | |>  < (__| |_| |
+|_| |_| |_/_/\\_\\___|\\__|_|{_R}
 
   {_B}Apple Mail from your terminal{_R} {_D}— v{__version__}{_R}
   {_D}─────────────────────────────────────────{_R}
@@ -161,7 +159,7 @@ def _step_header(step: int, total: int, title: str, hint: str) -> None:
 
 
 def cmd_init(args) -> None:
-    """Interactive setup wizard to configure the my mail CLI."""
+    """Interactive setup wizard to configure mxctl."""
     print(_BANNER)
 
     # Check for existing config
@@ -296,7 +294,7 @@ end tell
 
     # --- Step 3: Todoist API token ---
     _step_header(3, total_steps, "Todoist Integration",
-                 "Turn emails into tasks with `my mail to-todoist`.")
+                 "Turn emails into tasks with `mxctl to-todoist`.")
     print(f"  {_D}Get your token: Todoist Settings > Integrations > Developer{_R}")
 
     todoist_token = ""
@@ -337,10 +335,10 @@ end tell
         f"  {_D}Config saved to {CONFIG_FILE}{_R}\n"
         f"  {_B}{' · '.join(summary_parts)}{_R}\n"
         f"\n  {_B}Get started:{_R}\n"
-        f"    {_G}my mail inbox{_R}       {_D}Unread counts across all accounts{_R}\n"
-        f"    {_G}my mail summary{_R}     {_D}AI-concise one-liner per unread{_R}\n"
-        f"    {_G}my mail triage{_R}      {_D}Unread grouped by urgency{_R}\n"
-        f"    {_G}my mail --help{_R}      {_D}See all 49 commands{_R}\n"
+        f"    {_G}mxctl inbox{_R}       {_D}Unread counts across all accounts{_R}\n"
+        f"    {_G}mxctl summary{_R}     {_D}AI-concise one-liner per unread{_R}\n"
+        f"    {_G}mxctl triage{_R}      {_D}Unread grouped by urgency{_R}\n"
+        f"    {_G}mxctl --help{_R}      {_D}See all 49 commands{_R}\n"
     )
 
     if getattr(args, "json", False):

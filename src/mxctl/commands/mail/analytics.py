@@ -3,7 +3,7 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
-from my_cli.config import (
+from mxctl.config import (
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_MAILBOX,
     DEFAULT_MESSAGE_LIMIT,
@@ -15,10 +15,10 @@ from my_cli.config import (
     save_message_aliases,
     validate_limit,
 )
-from my_cli.util.applescript import escape, run
-from my_cli.util.dates import to_applescript_date
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import extract_email, parse_message_line
+from mxctl.util.applescript import escape, run
+from mxctl.util.dates import to_applescript_date
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import extract_email, parse_message_line
 
 
 # ---------------------------------------------------------------------------

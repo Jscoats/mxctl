@@ -31,7 +31,7 @@ def inbox_iterator_all_accounts(inner_operations: str, cap: int = 20, account: s
         script = inbox_iterator_all_accounts(inner_ops, cap=30, account="iCloud")
     """
     if account:
-        from my_cli.util.applescript import escape
+        from mxctl.util.applescript import escape
         acct_escaped = escape(account)
         outer_open = f'set acct to account "{acct_escaped}"\n        set acctName to name of acct'
         outer_close = ""

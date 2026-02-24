@@ -6,14 +6,14 @@ import ssl
 import urllib.request
 import urllib.error
 
-from my_cli.config import (
+from mxctl.config import (
     APPLESCRIPT_TIMEOUT_SHORT,
     FIELD_SEPARATOR,
     get_config,
 )
-from my_cli.util.applescript import run, validate_msg_id
-from my_cli.util.formatting import die, format_output
-from my_cli.util.mail_helpers import resolve_message_context
+from mxctl.util.applescript import run, validate_msg_id
+from mxctl.util.formatting import die, format_output
+from mxctl.util.mail_helpers import resolve_message_context
 
 
 # ---------------------------------------------------------------------------

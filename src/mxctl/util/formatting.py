@@ -23,7 +23,7 @@ def _convert_dates_with_keys(obj: object, key: str | None = None) -> object:
     elif isinstance(obj, str) and key and "date" in key.lower():
         # Apply date conversion only for keys containing "date"
         # Import here to avoid circular dependency
-        from my_cli.util.dates import parse_applescript_date
+        from mxctl.util.dates import parse_applescript_date
 
         return parse_applescript_date(obj)
     else:

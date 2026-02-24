@@ -3,7 +3,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from my_cli.config import (
+from mxctl.config import (
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_MAILBOX,
     FIELD_SEPARATOR,
@@ -13,11 +13,11 @@ from my_cli.config import (
     save_message_aliases,
     validate_limit,
 )
-from my_cli.util.applescript import escape, run
-from my_cli.util.applescript_templates import mailbox_iterator
-from my_cli.util.dates import to_applescript_date
-from my_cli.util.formatting import format_output, truncate
-from my_cli.util.mail_helpers import extract_display_name, extract_email, parse_message_line
+from mxctl.util.applescript import escape, run
+from mxctl.util.applescript_templates import mailbox_iterator
+from mxctl.util.dates import to_applescript_date
+from mxctl.util.formatting import format_output, truncate
+from mxctl.util.mail_helpers import extract_display_name, extract_email, parse_message_line
 
 
 # ---------------------------------------------------------------------------
@@ -211,8 +211,8 @@ def cmd_process_inbox(args) -> None:
         if len(flagged) > 5:
             text += f"\n  ... and {len(flagged) - 5} more"
         text += "\n\nSuggested commands:"
-        text += f"\n  my mail read <ID> -a \"{flagged[0]['account']}\""
-        text += f"\n  my mail to-todoist <ID> -a \"{flagged[0]['account']}\" --priority 4"
+        text += f"\n  mxctl read <ID> -a \"{flagged[0]['account']}\""
+        text += f"\n  mxctl to-todoist <ID> -a \"{flagged[0]['account']}\" --priority 4"
 
     if people:
         text += f"\n\nPEOPLE ({len(people)}) — Requires attention:"
@@ -222,8 +222,8 @@ def cmd_process_inbox(args) -> None:
         if len(people) > 5:
             text += f"\n  ... and {len(people) - 5} more"
         text += "\n\nSuggested commands:"
-        text += f"\n  my mail read <ID> -a \"{people[0]['account']}\""
-        text += f"\n  my mail mark-read <ID> -a \"{people[0]['account']}\""
+        text += f"\n  mxctl read <ID> -a \"{people[0]['account']}\""
+        text += f"\n  mxctl mark-read <ID> -a \"{people[0]['account']}\""
 
     if notifications:
         text += f"\n\nNOTIFICATIONS ({len(notifications)}) — Bulk actions:"
@@ -233,8 +233,8 @@ def cmd_process_inbox(args) -> None:
         if len(notifications) > 5:
             text += f"\n  ... and {len(notifications) - 5} more"
         text += "\n\nSuggested commands:"
-        text += f"\n  my mail batch-read -a \"{notifications[0]['account']}\""
-        text += f"\n  my mail unsubscribe <ID> -a \"{notifications[0]['account']}\""
+        text += f"\n  mxctl batch-read -a \"{notifications[0]['account']}\""
+        text += f"\n  mxctl unsubscribe <ID> -a \"{notifications[0]['account']}\""
 
     json_data = {
         "total": total,
@@ -307,7 +307,7 @@ def cmd_clean_newsletters(args) -> None:
 
         # Suggest cleanup command
         acct_flag = f"-a \"{account}\"" if account else ""
-        cleanup_cmd = f"my mail batch-move --from-sender \"{nl['sender']}\" --to-mailbox \"Newsletters\" {acct_flag}"
+        cleanup_cmd = f"mxctl batch-move --from-sender \"{nl['sender']}\" --to-mailbox \"Newsletters\" {acct_flag}"
         text += f"\n    Cleanup: {cleanup_cmd}"
 
     format_output(args, text, json_data={"newsletters": newsletters})
@@ -452,11 +452,11 @@ def cmd_weekly_review(args) -> None:
     # Add suggested actions
     text += "\n\nSuggested Actions:"
     if flagged_messages:
-        text += "\n  • Review flagged messages and unflag when done: my mail unflag <id>"
+        text += "\n  • Review flagged messages and unflag when done: mxctl unflag <id>"
     if unreplied_messages:
         text += "\n  • Reply to pending messages from real people"
     if attachment_messages:
-        text += "\n  • Review and save important attachments: my mail save-attachment <id> <filename> <path>"
+        text += "\n  • Review and save important attachments: mxctl save-attachment <id> <filename> <path>"
     if not flagged_messages and not unreplied_messages and not attachment_messages:
         text += "\n  • Great job! Your inbox is clean."
 

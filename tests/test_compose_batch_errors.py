@@ -23,68 +23,68 @@ def _make_args(**kwargs):
 
 class TestDraftErrors:
     def test_draft_no_account_dies(self, monkeypatch):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: None)
 
         with pytest.raises(SystemExit):
             cmd_draft(_make_args(account=None, to="x@y.com", subject="S", body="B",
                                  template=None, cc=None, bcc=None))
 
     def test_draft_no_subject_no_template_dies(self, monkeypatch):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
 
         with pytest.raises(SystemExit):
             cmd_draft(_make_args(to="x@y.com", subject=None, body="hello",
                                  template=None, cc=None, bcc=None))
 
     def test_draft_no_body_no_template_dies(self, monkeypatch):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
 
         with pytest.raises(SystemExit):
             cmd_draft(_make_args(to="x@y.com", subject="hello", body=None,
                                  template=None, cc=None, bcc=None))
 
     def test_draft_template_not_found_dies(self, monkeypatch, tmp_path):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
 
         # Create a valid templates file without the requested template
         tpl_file = str(tmp_path / "templates.json")
         with open(tpl_file, "w") as f:
             json.dump({"other": {"subject": "S", "body": "B"}}, f)
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.TEMPLATES_FILE", tpl_file)
+        monkeypatch.setattr("mxctl.commands.mail.compose.TEMPLATES_FILE", tpl_file)
 
         with pytest.raises(SystemExit):
             cmd_draft(_make_args(to="x@y.com", subject=None, body=None,
                                  template="missing", cc=None, bcc=None))
 
     def test_draft_corrupt_template_file_dies(self, monkeypatch, tmp_path):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
 
         tpl_file = str(tmp_path / "templates.json")
         with open(tpl_file, "w") as f:
             f.write("{corrupt json")
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.TEMPLATES_FILE", tpl_file)
+        monkeypatch.setattr("mxctl.commands.mail.compose.TEMPLATES_FILE", tpl_file)
 
         with pytest.raises(SystemExit):
             cmd_draft(_make_args(to="x@y.com", subject=None, body=None,
                                  template="any", cc=None, bcc=None))
 
     def test_draft_no_templates_file_dies(self, monkeypatch, tmp_path):
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("my_cli.commands.mail.compose.TEMPLATES_FILE",
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.TEMPLATES_FILE",
                             str(tmp_path / "nonexistent.json"))
 
         with pytest.raises(SystemExit):
@@ -98,11 +98,11 @@ class TestDraftErrors:
 
 class TestBatchMoveEffectiveCount:
     def test_dry_run_with_limit_caps_count(self, monkeypatch, capsys):
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="50")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="test@x.com", to_mailbox="Archive",
                           dry_run=True, limit=10)
@@ -112,11 +112,11 @@ class TestBatchMoveEffectiveCount:
         assert "Would move 10 messages" in out  # effective_count = min(50, 10) = 10
 
     def test_dry_run_without_limit_uses_total(self, monkeypatch, capsys):
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="25")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="test@x.com", to_mailbox="Archive",
                           dry_run=True, limit=None)
@@ -128,11 +128,11 @@ class TestBatchMoveEffectiveCount:
 
 class TestBatchDeleteEffectiveCount:
     def test_dry_run_with_limit_caps_count(self, monkeypatch, capsys):
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="100")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="spam@x.com", older_than=None,
                           dry_run=True, limit=20, force=False)
@@ -142,11 +142,11 @@ class TestBatchDeleteEffectiveCount:
         assert "Would delete 20 messages" in out  # effective_count = min(100, 20) = 20
 
     def test_dry_run_without_limit_uses_total(self, monkeypatch, capsys):
-        from my_cli.commands.mail.batch import cmd_batch_delete
+        from mxctl.commands.mail.batch import cmd_batch_delete
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="42")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="spam@x.com", older_than=None,
                           dry_run=True, limit=None, force=False)
@@ -163,14 +163,14 @@ class TestBatchDeleteEffectiveCount:
 class TestCmdToTodoist:
     def test_to_todoist_missing_token_dies(self, monkeypatch):
         """Test that missing Todoist API token causes SystemExit."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.todoist_integration.resolve_message_context",
+            "mxctl.commands.mail.todoist_integration.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
         monkeypatch.setattr(
-            "my_cli.commands.mail.todoist_integration.get_config",
+            "mxctl.commands.mail.todoist_integration.get_config",
             lambda: {},  # no todoist_api_token
         )
 
@@ -180,15 +180,15 @@ class TestCmdToTodoist:
 
     def test_to_todoist_happy_path(self, monkeypatch, capsys):
         """Test that cmd_to_todoist creates a task via the API."""
-        from my_cli.commands.mail.todoist_integration import cmd_to_todoist
-        from my_cli.config import FIELD_SEPARATOR
+        from mxctl.commands.mail.todoist_integration import cmd_to_todoist
+        from mxctl.config import FIELD_SEPARATOR
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.todoist_integration.resolve_message_context",
+            "mxctl.commands.mail.todoist_integration.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
         monkeypatch.setattr(
-            "my_cli.commands.mail.todoist_integration.get_config",
+            "mxctl.commands.mail.todoist_integration.get_config",
             lambda: {"todoist_api_token": "test-token-123"},
         )
 
@@ -196,7 +196,7 @@ class TestCmdToTodoist:
         mock_run = Mock(
             return_value=f"Test Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}2026-01-15"
         )
-        monkeypatch.setattr("my_cli.commands.mail.todoist_integration.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.run", mock_run)
 
         # Mock the urllib HTTP call
         fake_response_data = {"id": "task-999", "content": "Test Subject", "url": "https://todoist.com/tasks/999"}
@@ -205,7 +205,7 @@ class TestCmdToTodoist:
         fake_response.__exit__ = Mock(return_value=False)
         fake_response.read.return_value = json.dumps(fake_response_data).encode("utf-8")
 
-        with patch("my_cli.commands.mail.todoist_integration.urllib.request.urlopen", return_value=fake_response):
+        with patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen", return_value=fake_response):
             args = _make_args(id=42, project=None, priority=1, due=None)
             cmd_to_todoist(args)
 
@@ -221,11 +221,11 @@ class TestCmdToTodoist:
 class TestCmdUnsubscribe:
     def test_unsubscribe_dry_run_shows_list_unsubscribe_url(self, monkeypatch, capsys):
         """Test that --dry-run shows the List-Unsubscribe URL from headers."""
-        from my_cli.commands.mail.actions import cmd_unsubscribe
-        from my_cli.config import FIELD_SEPARATOR
+        from mxctl.commands.mail.actions import cmd_unsubscribe
+        from mxctl.config import FIELD_SEPARATOR
 
         monkeypatch.setattr(
-            "my_cli.commands.mail.actions.resolve_message_context",
+            "mxctl.commands.mail.actions.resolve_message_context",
             lambda _: ("iCloud", "INBOX", "iCloud", "INBOX"),
         )
 
@@ -238,7 +238,7 @@ class TestCmdUnsubscribe:
         mock_run = Mock(
             return_value=f"Newsletter Subject{FIELD_SEPARATOR}HEADER_SPLIT{FIELD_SEPARATOR}{raw_headers}"
         )
-        monkeypatch.setattr("my_cli.commands.mail.actions.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.actions.run", mock_run)
 
         args = _make_args(id=99, dry_run=True, open=False)
         cmd_unsubscribe(args)
@@ -255,11 +255,11 @@ class TestCmdUnsubscribe:
 class TestDraftHappyPath:
     def test_draft_creates_draft_successfully(self, monkeypatch, capsys):
         """Test that cmd_draft succeeds and prints the draft creation message."""
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="draft created")
-        monkeypatch.setattr("my_cli.commands.mail.compose.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.compose.run", mock_run)
 
         args = _make_args(to="recipient@example.com", subject="Hello there",
                           body="This is the email body.", template=None,
@@ -274,11 +274,11 @@ class TestDraftHappyPath:
 
     def test_draft_with_cc_and_bcc_shows_recipients(self, monkeypatch, capsys):
         """Test that cmd_draft includes CC and BCC in the output."""
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="draft created")
-        monkeypatch.setattr("my_cli.commands.mail.compose.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.compose.run", mock_run)
 
         args = _make_args(to="recipient@example.com", subject="Meeting",
                           body="Let's meet.", template=None,
@@ -292,11 +292,11 @@ class TestDraftHappyPath:
 
     def test_draft_output_mentions_mail_app(self, monkeypatch, capsys):
         """Test that the draft success message refers to Mail.app."""
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="draft created")
-        monkeypatch.setattr("my_cli.commands.mail.compose.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.compose.run", mock_run)
 
         args = _make_args(to="someone@example.com", subject="Test subject",
                           body="Test body text.", template=None,
@@ -309,11 +309,11 @@ class TestDraftHappyPath:
 
     def test_draft_applescript_uses_safe_email_address_lookup(self, monkeypatch):
         """Regression: draft AppleScript must handle email addresses as list or string (-1700 fix)."""
-        from my_cli.commands.mail.compose import cmd_draft
+        from mxctl.commands.mail.compose import cmd_draft
 
-        monkeypatch.setattr("my_cli.commands.mail.compose.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.compose.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="draft created")
-        monkeypatch.setattr("my_cli.commands.mail.compose.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.compose.run", mock_run)
 
         args = _make_args(to="r@example.com", subject="S", body="B",
                           template=None, cc=None, bcc=None)
@@ -334,20 +334,20 @@ class TestDraftHappyPath:
 class TestBatchRead:
     def test_batch_read_no_account_dies(self, monkeypatch):
         """Test that cmd_batch_read dies when no account is resolved."""
-        from my_cli.commands.mail.batch import cmd_batch_read
+        from mxctl.commands.mail.batch import cmd_batch_read
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: None)
 
         with pytest.raises(SystemExit):
             cmd_batch_read(_make_args(account=None))
 
     def test_batch_read_marks_messages_and_reports_count(self, monkeypatch, capsys):
         """Test that cmd_batch_read reports the number of messages marked as read."""
-        from my_cli.commands.mail.batch import cmd_batch_read
+        from mxctl.commands.mail.batch import cmd_batch_read
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="7")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(mailbox="INBOX")
         cmd_batch_read(args)
@@ -359,11 +359,11 @@ class TestBatchRead:
 
     def test_batch_read_zero_messages_reports_zero(self, monkeypatch, capsys):
         """Test that cmd_batch_read handles zero unread messages gracefully."""
-        from my_cli.commands.mail.batch import cmd_batch_read
+        from mxctl.commands.mail.batch import cmd_batch_read
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="0")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(mailbox="INBOX")
         cmd_batch_read(args)
@@ -373,11 +373,11 @@ class TestBatchRead:
 
     def test_batch_read_non_digit_result_treated_as_zero(self, monkeypatch, capsys):
         """Test that non-digit AppleScript output is treated as zero count."""
-        from my_cli.commands.mail.batch import cmd_batch_read
+        from mxctl.commands.mail.batch import cmd_batch_read
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="error")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(mailbox="INBOX")
         cmd_batch_read(args)
@@ -393,29 +393,29 @@ class TestBatchRead:
 class TestBatchFlag:
     def test_batch_flag_no_account_dies(self, monkeypatch):
         """Test that cmd_batch_flag dies when no account is resolved."""
-        from my_cli.commands.mail.batch import cmd_batch_flag
+        from mxctl.commands.mail.batch import cmd_batch_flag
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: None)
 
         with pytest.raises(SystemExit):
             cmd_batch_flag(_make_args(account=None, from_sender="sender@x.com"))
 
     def test_batch_flag_no_sender_dies(self, monkeypatch):
         """Test that cmd_batch_flag dies when --from-sender is missing."""
-        from my_cli.commands.mail.batch import cmd_batch_flag
+        from mxctl.commands.mail.batch import cmd_batch_flag
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
 
         with pytest.raises(SystemExit):
             cmd_batch_flag(_make_args(from_sender=None))
 
     def test_batch_flag_flags_messages_and_reports_count(self, monkeypatch, capsys):
         """Test that cmd_batch_flag reports the number of flagged messages."""
-        from my_cli.commands.mail.batch import cmd_batch_flag
+        from mxctl.commands.mail.batch import cmd_batch_flag
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="5")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="newsletter@example.com")
         cmd_batch_flag(args)
@@ -427,11 +427,11 @@ class TestBatchFlag:
 
     def test_batch_flag_zero_messages_reports_zero(self, monkeypatch, capsys):
         """Test that cmd_batch_flag handles zero matching messages gracefully."""
-        from my_cli.commands.mail.batch import cmd_batch_flag
+        from mxctl.commands.mail.batch import cmd_batch_flag
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
         mock_run = Mock(return_value="0")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="nobody@example.com")
         cmd_batch_flag(args)
@@ -447,9 +447,9 @@ class TestBatchFlag:
 class TestBatchMoveExecution:
     def test_batch_move_no_account_dies(self, monkeypatch):
         """Test that cmd_batch_move dies when no account is resolved."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: None)
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: None)
 
         with pytest.raises(SystemExit):
             cmd_batch_move(_make_args(account=None, from_sender="s@x.com",
@@ -457,9 +457,9 @@ class TestBatchMoveExecution:
 
     def test_batch_move_no_sender_dies(self, monkeypatch):
         """Test that cmd_batch_move dies when --from-sender is missing."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
 
         with pytest.raises(SystemExit):
             cmd_batch_move(_make_args(from_sender=None, to_mailbox="Archive",
@@ -467,9 +467,9 @@ class TestBatchMoveExecution:
 
     def test_batch_move_no_dest_mailbox_dies(self, monkeypatch):
         """Test that cmd_batch_move dies when --to-mailbox is missing."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
 
         with pytest.raises(SystemExit):
             cmd_batch_move(_make_args(from_sender="s@x.com", to_mailbox=None,
@@ -477,20 +477,20 @@ class TestBatchMoveExecution:
 
     def test_batch_move_actually_moves_messages(self, monkeypatch, capsys):
         """Test the live execution path of cmd_batch_move (not dry-run)."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_mailbox",
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_mailbox",
                             lambda account, mailbox: mailbox)
 
         # First call returns count (3 messages), second call returns move result
         # Move result: count on line 0, message IDs on subsequent lines
         move_result = "3\n1001\n1002\n1003"
         mock_run = Mock(side_effect=["3", move_result])
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         mock_log = Mock()
-        monkeypatch.setattr("my_cli.commands.mail.batch.log_batch_operation", mock_log)
+        monkeypatch.setattr("mxctl.commands.mail.batch.log_batch_operation", mock_log)
 
         args = _make_args(from_sender="sender@example.com", to_mailbox="Archive",
                           dry_run=False, limit=None)
@@ -513,13 +513,13 @@ class TestBatchMoveExecution:
 
     def test_batch_move_zero_matching_messages_skips_move(self, monkeypatch, capsys):
         """Test that cmd_batch_move exits early when no messages match."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_mailbox",
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_mailbox",
                             lambda account, mailbox: mailbox)
         mock_run = Mock(return_value="0")
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         args = _make_args(from_sender="nobody@example.com", to_mailbox="Archive",
                           dry_run=False, limit=None)
@@ -532,18 +532,18 @@ class TestBatchMoveExecution:
 
     def test_batch_move_execution_with_limit(self, monkeypatch, capsys):
         """Test that cmd_batch_move respects --limit during actual move."""
-        from my_cli.commands.mail.batch import cmd_batch_move
+        from mxctl.commands.mail.batch import cmd_batch_move
 
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("my_cli.commands.mail.batch.resolve_mailbox",
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_account", lambda _: "iCloud")
+        monkeypatch.setattr("mxctl.commands.mail.batch.resolve_mailbox",
                             lambda account, mailbox: mailbox)
 
         move_result = "2\n2001\n2002"
         mock_run = Mock(side_effect=["10", move_result])
-        monkeypatch.setattr("my_cli.commands.mail.batch.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.batch.run", mock_run)
 
         mock_log = Mock()
-        monkeypatch.setattr("my_cli.commands.mail.batch.log_batch_operation", mock_log)
+        monkeypatch.setattr("mxctl.commands.mail.batch.log_batch_operation", mock_log)
 
         args = _make_args(from_sender="bulk@example.com", to_mailbox="Bulk",
                           dry_run=False, limit=2)

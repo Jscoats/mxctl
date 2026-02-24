@@ -4,7 +4,7 @@ import os
 import re
 from email.utils import parseaddr
 
-from my_cli.config import (
+from mxctl.config import (
     APPLESCRIPT_TIMEOUT_BATCH,
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_MAILBOX,
@@ -14,9 +14,9 @@ from my_cli.config import (
     resolve_account,
     save_message_aliases,
 )
-from my_cli.util.applescript import escape, run, validate_msg_id
-from my_cli.util.formatting import die, format_output, truncate
-from my_cli.util.mail_helpers import extract_email, normalize_subject, parse_message_line
+from mxctl.util.applescript import escape, run, validate_msg_id
+from mxctl.util.formatting import die, format_output, truncate
+from mxctl.util.mail_helpers import extract_email, normalize_subject, parse_message_line
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ def _export_bulk(args, mailbox: str, account: str, dest: str, after: str | None)
 
     whose = ""
     if after:
-        from my_cli.util.dates import parse_date, to_applescript_date
+        from mxctl.util.dates import parse_date, to_applescript_date
         dt = parse_date(after)
         whose = f'whose date received >= date "{to_applescript_date(dt)}"'
 

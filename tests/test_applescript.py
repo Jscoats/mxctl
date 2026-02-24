@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from my_cli.util.applescript import escape, run, sanitize_path, validate_msg_id
+from mxctl.util.applescript import escape, run, sanitize_path, validate_msg_id
 
 
 class TestEscape:
@@ -61,7 +61,7 @@ class TestRunSmartQuotes:
         mock_result.returncode = 1
         mock_result.stderr = "Can\u2019t get account \"Foo\". (-1728)"
 
-        monkeypatch.setattr("my_cli.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
+        monkeypatch.setattr("mxctl.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
 
         with pytest.raises(SystemExit):
             run("dummy script")
@@ -75,7 +75,7 @@ class TestRunSmartQuotes:
         mock_result.returncode = 1
         mock_result.stderr = "Can\u2019t get message 1 of mailbox \"INBOX\". (-1719)"
 
-        monkeypatch.setattr("my_cli.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
+        monkeypatch.setattr("mxctl.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
 
         with pytest.raises(SystemExit):
             run("dummy script")
@@ -89,7 +89,7 @@ class TestRunSmartQuotes:
         mock_result.returncode = 1
         mock_result.stderr = "Can't get account \"Bar\". (-1728)"
 
-        monkeypatch.setattr("my_cli.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
+        monkeypatch.setattr("mxctl.util.applescript.subprocess.run", lambda *a, **kw: mock_result)
 
         with pytest.raises(SystemExit):
             run("dummy script")

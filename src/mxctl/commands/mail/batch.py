@@ -3,16 +3,16 @@
 import sys
 from datetime import datetime, timedelta
 
-from my_cli.config import (
+from mxctl.config import (
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_MAILBOX,
     resolve_account,
 )
-from my_cli.util.applescript import escape, run
-from my_cli.util.dates import to_applescript_date
-from my_cli.util.formatting import die, format_output
-from my_cli.commands.mail.undo import log_batch_operation, log_fence_operation
-from my_cli.util.mail_helpers import resolve_mailbox
+from mxctl.util.applescript import escape, run
+from mxctl.util.dates import to_applescript_date
+from mxctl.util.formatting import die, format_output
+from mxctl.commands.mail.undo import log_batch_operation, log_fence_operation
+from mxctl.util.mail_helpers import resolve_mailbox
 
 
 # ---------------------------------------------------------------------------

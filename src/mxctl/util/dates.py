@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from my_cli.util.formatting import die
+from mxctl.util.formatting import die
 
 
 def parse_date(date_str: str) -> datetime:

@@ -3,8 +3,8 @@
 import json
 import os
 
-from my_cli.config import CONFIG_DIR, TEMPLATES_FILE, file_lock
-from my_cli.util.formatting import format_output, die
+from mxctl.config import CONFIG_DIR, TEMPLATES_FILE, file_lock
+from mxctl.util.formatting import format_output, die
 
 
 def _load_templates() -> dict:
@@ -85,7 +85,7 @@ def cmd_templates_show(args) -> None:
     templates = _load_templates()
 
     if name not in templates:
-        die(f"Template '{name}' not found. Use 'my mail templates list' to see available templates.")
+        die(f"Template '{name}' not found. Use 'mxctl templates list' to see available templates.")
 
     template = templates[name]
     subject = template.get("subject", "")
@@ -143,5 +143,5 @@ def register(subparsers) -> None:
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_templates_delete)
 
-    # If `my mail templates` is run with no subcommand, show help
+    # If `mxctl templates` is run with no subcommand, show help
     templates_parser.set_defaults(func=lambda _: templates_parser.print_help())

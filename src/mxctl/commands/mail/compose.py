@@ -3,9 +3,9 @@
 import json
 import os
 
-from my_cli.config import resolve_account, TEMPLATES_FILE, file_lock
-from my_cli.util.applescript import escape, run
-from my_cli.util.formatting import die, format_output
+from mxctl.config import resolve_account, TEMPLATES_FILE, file_lock
+from mxctl.util.applescript import escape, run
+from mxctl.util.formatting import die, format_output
 
 
 def cmd_draft(args) -> None:
@@ -29,9 +29,9 @@ def cmd_draft(args) -> None:
                     try:
                         templates = json.load(f)
                     except (json.JSONDecodeError, OSError):
-                        die("Templates file is corrupt. Run 'my mail templates list' to diagnose.")
+                        die("Templates file is corrupt. Run 'mxctl templates list' to diagnose.")
             if template_name not in templates:
-                die(f"Template '{template_name}' not found. Use 'my mail templates list' to see available templates.")
+                die(f"Template '{template_name}' not found. Use 'mxctl templates list' to see available templates.")
             template = templates[template_name]
             # Apply template, allowing flag overrides
             if not subject:
@@ -39,7 +39,7 @@ def cmd_draft(args) -> None:
             if not body:
                 body = template.get("body", "")
         else:
-            die("No templates file found. Create templates with 'my mail templates create'.")
+            die("No templates file found. Create templates with 'mxctl templates create'.")
 
     # Validate that we have subject and body
     if not subject:

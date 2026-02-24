@@ -6,14 +6,14 @@ import json
 import os
 from datetime import datetime
 
-from my_cli.config import (
+from mxctl.config import (
     CONFIG_DIR,
     APPLESCRIPT_TIMEOUT_LONG,
     file_lock,
     UNDO_LOG_FILE,
 )
-from my_cli.util.applescript import escape, run
-from my_cli.util.formatting import die, format_output
+from mxctl.util.applescript import escape, run
+from mxctl.util.formatting import die, format_output
 
 MAX_UNDO_OPERATIONS = 10
 UNDO_MAX_AGE_MINUTES = 30
@@ -95,7 +95,7 @@ def log_batch_operation(
 def log_fence_operation(operation_type: str) -> None:
     """Log a fence sentinel for operations that cannot be undone (e.g. batch-read, batch-flag).
 
-    This claims the undo slot so that a subsequent `my mail undo` does not silently
+    This claims the undo slot so that a subsequent `mxctl undo` does not silently
     skip past these operations and accidentally undo an earlier undoable entry.
     """
     operations = _load_undo_log(include_stale=True)
@@ -155,8 +155,8 @@ def cmd_undo(args) -> None:
         age_str = f"{int(age)} minutes ago" if age is not None else "unknown time ago"
         die(
             f"Nothing recent to undo (most recent operation was {age_str}). "
-            f"Run `my mail undo --list` to see older operations and use "
-            f"`my mail undo --force` to run them."
+            f"Run `mxctl undo --list` to see older operations and use "
+            f"`mxctl undo --force` to run them."
         )
 
     operations = fresh_ops if not force else all_ops
@@ -173,8 +173,8 @@ def cmd_undo(args) -> None:
         if not force:
             die(
                 f"The most recent operation ({op_name}) cannot be undone. "
-                f"Use `my mail undo --list` to see older undoable operations, "
-                f"or `my mail undo --force` to skip to the next undoable entry."
+                f"Use `mxctl undo --list` to see older undoable operations, "
+                f"or `mxctl undo --force` to skip to the next undoable entry."
             )
         # --force: pop the fence and continue to the next entry
         if not operations:

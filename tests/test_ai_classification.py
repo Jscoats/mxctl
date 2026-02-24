@@ -8,8 +8,8 @@ import argparse
 import json
 from unittest.mock import Mock
 
-from my_cli.config import FIELD_SEPARATOR, NOREPLY_PATTERNS
-from my_cli.util.mail_helpers import extract_email, normalize_subject
+from mxctl.config import FIELD_SEPARATOR, NOREPLY_PATTERNS
+from mxctl.util.mail_helpers import extract_email, normalize_subject
 
 
 class TestTriageCategorizationLogic:
@@ -60,15 +60,15 @@ class TestTriageCategorizationLogic:
 
     def test_cmd_triage_categorizes_noreply_sender_as_notification(self, monkeypatch, capsys):
         """cmd_triage places a noreply@ sender into NOTIFICATIONS, not PEOPLE."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}10{FIELD_SEPARATOR}Your Receipt{FIELD_SEPARATOR}"
             f"noreply@shop.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}false\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -81,16 +81,16 @@ class TestTriageCategorizationLogic:
 
     def test_cmd_triage_categorizes_display_name_noreply_as_notification(self, monkeypatch, capsys):
         """cmd_triage uses the extracted email address, not the display name, for classification."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         # Sender has a friendly display name but a no-reply address
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}11{FIELD_SEPARATOR}Weekly Digest{FIELD_SEPARATOR}"
             f'"Shop Alerts" <notifications@shop.com>{FIELD_SEPARATOR}2026-01-05{FIELD_SEPARATOR}false\n'
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -216,7 +216,7 @@ class TestStringTruncation:
 
     def test_truncate_logic(self):
         """Test basic truncation behavior."""
-        from my_cli.util.formatting import truncate
+        from mxctl.util.formatting import truncate
 
         assert truncate("hello world", 8) == "hello..."
         assert truncate("short", 20) == "short"
@@ -224,7 +224,7 @@ class TestStringTruncation:
 
     def test_truncate_with_sender_names(self):
         """Test truncation of sender names."""
-        from my_cli.util.formatting import truncate
+        from mxctl.util.formatting import truncate
 
         long_name = "Very Long Sender Name Here"
         truncated = truncate(long_name, 20)
@@ -234,7 +234,7 @@ class TestStringTruncation:
 
     def test_truncate_with_subjects(self):
         """Test truncation of long subjects."""
-        from my_cli.util.formatting import truncate
+        from mxctl.util.formatting import truncate
 
         long_subject = "This is a very long subject line that should definitely be truncated"
         truncated = truncate(long_subject, 55)
@@ -248,15 +248,15 @@ class TestCmdSummary:
 
     def test_summary_sender_display_name_extracted(self, monkeypatch, capsys):
         """cmd_summary strips angle-bracket email addresses, showing only the display name."""
-        from my_cli.commands.mail.ai import cmd_summary
+        from mxctl.commands.mail.ai import cmd_summary
 
         mock_run = Mock(return_value=(
             f'iCloud{FIELD_SEPARATOR}200{FIELD_SEPARATOR}Hello{FIELD_SEPARATOR}'
             f'"Alice Smith" <alice@example.com>{FIELD_SEPARATOR}2026-02-01\n'
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=20, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -270,16 +270,16 @@ class TestCmdSummary:
 
     def test_summary_skips_malformed_lines(self, monkeypatch, capsys):
         """cmd_summary silently skips lines that have fewer than 5 fields."""
-        from my_cli.commands.mail.ai import cmd_summary
+        from mxctl.commands.mail.ai import cmd_summary
 
         # One valid line, one malformed (only 2 fields)
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}99{FIELD_SEPARATOR}Good Subject{FIELD_SEPARATOR}a@b.com{FIELD_SEPARATOR}2026-01-10\n"
             f"bad-line-no-separators\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=20, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -293,14 +293,14 @@ class TestCmdSummary:
 
     def test_summary_json_contains_all_fields(self, monkeypatch, capsys):
         """cmd_summary JSON output includes account, id, subject, sender, and date fields."""
-        from my_cli.commands.mail.ai import cmd_summary
+        from mxctl.commands.mail.ai import cmd_summary
 
         mock_run = Mock(return_value=(
             f"Work{FIELD_SEPARATOR}555{FIELD_SEPARATOR}Quarterly Report{FIELD_SEPARATOR}boss@work.com{FIELD_SEPARATOR}2026-03-15\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=20, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -323,15 +323,15 @@ class TestCmdTriage:
 
     def test_triage_all_flagged_shows_no_people_or_notifications(self, monkeypatch, capsys):
         """When every message is flagged, PEOPLE and NOTIFICATIONS sections are absent."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}1{FIELD_SEPARATOR}Urgent A{FIELD_SEPARATOR}a@a.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}true\n"
             f"iCloud{FIELD_SEPARATOR}2{FIELD_SEPARATOR}Urgent B{FIELD_SEPARATOR}b@b.com{FIELD_SEPARATOR}2026-01-02{FIELD_SEPARATOR}true\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -345,16 +345,16 @@ class TestCmdTriage:
 
     def test_triage_skips_lines_with_fewer_than_six_fields(self, monkeypatch, capsys):
         """cmd_triage ignores lines that are missing the flagged field (< 6 fields)."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         # One valid line (6 fields) and one truncated line (5 fields — no flagged status)
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}10{FIELD_SEPARATOR}Valid{FIELD_SEPARATOR}p@p.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}false\n"
             f"iCloud{FIELD_SEPARATOR}11{FIELD_SEPARATOR}Truncated{FIELD_SEPARATOR}q@q.com{FIELD_SEPARATOR}2026-01-02\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -367,14 +367,14 @@ class TestCmdTriage:
 
     def test_triage_json_structure_has_correct_keys(self, monkeypatch, capsys):
         """cmd_triage JSON output is an object with exactly flagged, people, and notifications keys."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}5{FIELD_SEPARATOR}Note{FIELD_SEPARATOR}friend@ex.com{FIELD_SEPARATOR}2026-01-01{FIELD_SEPARATOR}false\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 
@@ -390,14 +390,14 @@ class TestCmdTriage:
 
     def test_triage_json_message_has_flagged_field(self, monkeypatch, capsys):
         """Each message dict in triage JSON output includes a boolean 'flagged' field."""
-        from my_cli.commands.mail.ai import cmd_triage
+        from mxctl.commands.mail.ai import cmd_triage
 
         mock_run = Mock(return_value=(
             f"iCloud{FIELD_SEPARATOR}7{FIELD_SEPARATOR}Important{FIELD_SEPARATOR}boss@co.com{FIELD_SEPARATOR}2026-02-10{FIELD_SEPARATOR}true\n"
         ))
-        monkeypatch.setattr("my_cli.commands.mail.ai.run", mock_run)
+        monkeypatch.setattr("mxctl.commands.mail.ai.run", mock_run)
         monkeypatch.setattr(
-            "my_cli.commands.mail.ai.inbox_iterator_all_accounts",
+            "mxctl.commands.mail.ai.inbox_iterator_all_accounts",
             lambda inner_ops, cap=30, account=None: "tell application \"Mail\"\nend tell",
         )
 

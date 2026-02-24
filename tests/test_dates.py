@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from my_cli.util.dates import (
+from mxctl.util.dates import (
     days_ago,
     parse_applescript_date,
     parse_date,
@@ -41,14 +41,14 @@ class TestToApplescriptDate:
 class TestDaysAgo:
     """Test days_ago helper."""
 
-    @patch("my_cli.util.dates.datetime")
+    @patch("mxctl.util.dates.datetime")
     def test_days_ago(self, mock_datetime):
         mock_datetime.now.return_value = datetime(2026, 2, 14)
         mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
         result = days_ago(7)
         assert result == "2026-02-07"
 
-    @patch("my_cli.util.dates.datetime")
+    @patch("mxctl.util.dates.datetime")
     def test_zero_days_ago(self, mock_datetime):
         mock_datetime.now.return_value = datetime(2026, 2, 14)
         mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
@@ -59,7 +59,7 @@ class TestDaysAgo:
 class TestToday:
     """Test today helper."""
 
-    @patch("my_cli.util.dates.datetime")
+    @patch("mxctl.util.dates.datetime")
     def test_today(self, mock_datetime):
         mock_datetime.now.return_value = datetime(2026, 2, 14)
         result = today()

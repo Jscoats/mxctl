@@ -7,7 +7,7 @@ import re
 import subprocess
 import sys
 
-from my_cli.config import APPLESCRIPT_TIMEOUT_DEFAULT, STATE_FILE
+from mxctl.config import APPLESCRIPT_TIMEOUT_DEFAULT, STATE_FILE
 
 _automation_warned: bool = False
 
@@ -19,7 +19,7 @@ def _warn_automation_once() -> None:
         return
 
     # Check if we've already shown the prompt in a previous session
-    from my_cli.config import get_state, _save_json
+    from mxctl.config import get_state, _save_json
 
     state = get_state()
     if state.get("automation_prompted"):
@@ -59,8 +59,8 @@ def validate_msg_id(value) -> int:
     Raises SystemExit via die() if the value is not a positive integer.
     Returns the integer value on success.
     """
-    from my_cli.config import resolve_alias
-    from my_cli.util.formatting import die
+    from mxctl.config import resolve_alias
+    from mxctl.util.formatting import die
 
     # Reject floats explicitly — int(1.5) == 1 without error, which is misleading
     if isinstance(value, float):
@@ -126,9 +126,9 @@ def run(script: str, timeout: int = APPLESCRIPT_TIMEOUT_DEFAULT) -> str:
         elif "application isn't running" in err_lower:
             msg = "Mail.app failed to launch. Try opening Mail.app manually and try again."
         elif "can't get account" in err_lower:
-            msg = "Account not found. Run `my mail accounts` to see available accounts."
+            msg = "Account not found. Run `mxctl accounts` to see available accounts."
         elif "can't get mailbox" in err_lower:
-            msg = "Mailbox not found. Run `my mail mailboxes` to see available mailboxes."
+            msg = "Mailbox not found. Run `mxctl mailboxes` to see available mailboxes."
         elif "can't get message" in err_lower:
             msg = "Message not found — it may have been moved or deleted."
         else:

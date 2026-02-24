@@ -2,9 +2,9 @@
 
 import os
 
-from my_cli.config import CONFIG_FILE, resolve_account, save_message_aliases, FIELD_SEPARATOR
-from my_cli.util.applescript import escape, run
-from my_cli.util.formatting import truncate, format_output
+from mxctl.config import CONFIG_FILE, resolve_account, save_message_aliases, FIELD_SEPARATOR
+from mxctl.util.applescript import escape, run
+from mxctl.util.formatting import truncate, format_output
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ def cmd_inbox(args) -> None:
             format_output(
                 args,
                 "No mail accounts found or no INBOX mailboxes available.\n"
-                "Run `my mail init` to configure your default account.",
+                "Run `mxctl init` to configure your default account.",
             )
         else:
             format_output(args, "No mail accounts found or no INBOX mailboxes available.")
