@@ -1,9 +1,14 @@
-# mxctl
+<h1 align="center">
+  <code>mxctl</code>
+</h1>
 
-[![CI](https://github.com/Jscoats/mxctl/actions/workflows/ci.yml/badge.svg)](https://github.com/Jscoats/mxctl/actions/workflows/ci.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Coverage: 87%](https://img.shields.io/badge/coverage-87%25-yellowgreen.svg)](https://github.com/Jscoats/mxctl)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<p align="center">
+  <a href="https://pypi.org/project/mxctl/"><img src="https://img.shields.io/pypi/v/mxctl.svg" alt="PyPI"></a>
+  <a href="https://github.com/Jscoats/mxctl/actions/workflows/ci.yml"><img src="https://github.com/Jscoats/mxctl/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
+  <a href="https://github.com/Jscoats/mxctl"><img src="https://img.shields.io/badge/coverage-87%25-yellowgreen.svg" alt="Coverage: 87%"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+</p>
 
 > Apple Mail from your terminal.
 
@@ -43,10 +48,10 @@
 
 ```bash
 # Requires Python 3.10+ and macOS
-pip install git+https://github.com/Jscoats/mxctl
+pip install mxctl
 
 # Or with uv (faster)
-uv tool install git+https://github.com/Jscoats/mxctl
+uv tool install mxctl
 ```
 
 Then run the setup wizard — it detects your Mail.app accounts, configures Gmail mailbox translation, and optionally connects Todoist:
@@ -376,14 +381,18 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
 
 ## Why Not X?
 
-**Why not mutt or neomutt?**
-Mutt replaces Mail.app -- you lose native macOS notifications, calendar event detection, FaceTime/iMessage continuity, and Rules. This CLI *extends* Mail.app rather than replacing it: your mail is still managed natively, but now also scriptable from the terminal.
+| | **mxctl** | **mutt/neomutt** | **Gmail/Outlook API** | **Raw AppleScript** |
+|---|---|---|---|---|
+| **Approach** | Extends Mail.app | Replaces Mail.app | Per-provider SDK | DIY scripting |
+| **Multi-account** | Any account in Mail.app | Config per account | Separate auth per provider | Manual per account |
+| **macOS integration** | Notifications, Rules, Continuity | None (terminal-only) | None | Partial |
+| **Structured output** | `--json` on every command | Text only | JSON (provider-specific) | Raw text |
+| **AI-ready** | Built for it (triage, summary) | No | Build it yourself | No |
+| **Batch + undo** | Built-in with rollback | No undo | Build it yourself | No |
+| **Setup** | `pip install mxctl && mxctl init` | Extensive config | OAuth flows + API keys | Write your own scripts |
+| **Dependencies** | Zero (stdlib only) | Varies | SDK + auth libraries | None |
 
-**Why not the Gmail API or Outlook API?**
-Those are per-provider -- separate SDKs, separate auth flows, separate data models. `mxctl` works with any account configured in Mail.app (iCloud, Gmail, Outlook, Exchange, custom IMAP) through a single unified interface. Add a new account to Mail.app and it just works.
-
-**Why not raw AppleScript or Hammerspoon?**
-You could wire this up yourself -- but this gives you 49 structured commands with `--json` output, batch operations with undo, template support, Todoist integration, and an AI-ready interface, all without writing a single line of AppleScript. The hard parts (field parsing, timeout handling, account resolution, error recovery) are already done.
+**In short:** mutt replaces Mail.app (you lose macOS integration). Provider APIs lock you into one service. Raw AppleScript works but you're building everything from scratch. mxctl gives you 49 structured commands on top of the Mail.app you already use.
 
 ## Contributing
 
