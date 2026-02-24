@@ -6,16 +6,32 @@ import sys
 import tty
 import termios
 
+from my_cli import __version__
 from my_cli.config import CONFIG_DIR, CONFIG_FILE, FIELD_SEPARATOR, get_config, _save_json  # noqa: F401 — CONFIG_DIR imported for test monkeypatching
 from my_cli.util.applescript import run
 from my_cli.util.formatting import format_output
 
 # ANSI helpers
 _G = "\x1b[1;32m"   # bold green
+_C = "\x1b[1;36m"   # bold cyan
 _D = "\x1b[90m"     # dim gray
 _B = "\x1b[1m"      # bold
 _R = "\x1b[0m"      # reset
 _W = "\x1b[1;37m"   # bold white
+
+_BANNER = f"""{_C}
+                                   _ _
+                                  (_) |
+ _ __ ___  _   _   _ __ ___   __ _ _| |
+| '_ ` _ \\| | | | | '_ ` _ \\ / _` | | |
+| | | | | | |_| | | | | | | | (_| | | |
+|_| |_| |_|\\__, | |_| |_| |_|\\__,_|_|_|
+            __/ |
+           |___/{_R}
+
+  {_B}Apple Mail from your terminal{_R} {_D}— v{__version__}{_R}
+  {_D}─────────────────────────────────────────{_R}
+"""
 
 # Styled key hints for the hint bar
 _K_ARROWS = f"{_D}↑/↓{_R}"
@@ -138,22 +154,30 @@ def _checkbox_select(prompt: str, options: list[str]) -> list[int]:
     return result
 
 
+def _step_header(step: int, total: int, title: str, hint: str) -> None:
+    """Print a step header with number, title, and context hint."""
+    print(f"\n  {_C}Step {step}/{total}{_R} {_D}·{_R} {_B}{title}{_R}")
+    print(f"  {_D}{hint}{_R}\n")
+
+
 def cmd_init(args) -> None:
     """Interactive setup wizard to configure the my mail CLI."""
+    print(_BANNER)
+
     # Check for existing config
     if os.path.isfile(CONFIG_FILE):
         existing = get_config()
         default_acct = existing.get("mail", {}).get("default_account") or existing.get("default_account", "")
-        print(f"Existing config found. Default account: {default_acct or '(none)'}")
+        print(f"  {_D}Existing config found. Default account:{_R} {_B}{default_acct or '(none)'}{_R}")
         try:
-            answer = input("Reconfigure? [y/N]: ").strip().lower()
+            answer = input(f"  Reconfigure? [{_B}y{_R}/{_B}N{_R}]: ").strip().lower()
         except KeyboardInterrupt:
-            print("\nSetup cancelled.")
+            print(f"\n  {_D}Setup cancelled.{_R}")
             return
         except EOFError:
             answer = "n"
         if answer != "y":
-            print("Keeping existing configuration.")
+            print(f"  {_D}Keeping existing configuration.{_R}")
             if getattr(args, "json", False):
                 format_output(args, "", json_data=existing)
             return
@@ -174,7 +198,7 @@ end tell
     result = run(script)
 
     if not result.strip():
-        print("Error: No mail accounts found. Make sure Mail.app is configured.")
+        print(f"  {_G}!{_R} No mail accounts found. Make sure Mail.app is configured.")
         return
 
     # Parse accounts
@@ -194,44 +218,52 @@ end tell
     enabled_accounts = [a for a in accounts if a["enabled"]]
 
     if not enabled_accounts:
-        print("Error: No enabled mail accounts found.")
+        print(f"  {_G}!{_R} No enabled mail accounts found.")
         return
 
-    # --- Select primary account ---
+    total_steps = 3
+
+    # --- Step 1: Select primary account ---
+    _step_header(1, total_steps, "Default Account",
+                 "Which account should commands use when you don't specify -a?")
+
     if len(enabled_accounts) == 1:
         chosen = enabled_accounts[0]
-        print(f"Auto-selected the only enabled account: {chosen['name']} ({chosen['email']})")
+        print(f"  {_G}Auto-selected:{_R} {chosen['name']} ({chosen['email']})")
     elif _is_interactive():
         try:
             opts = [f"{a['name']} ({a['email']})" for a in enabled_accounts]
-            idx = _radio_select("Select primary account:", opts)
+            idx = _radio_select("  Select primary account:", opts)
             chosen = enabled_accounts[idx]
         except KeyboardInterrupt:
-            print("\nSetup cancelled.")
+            print(f"\n  {_D}Setup cancelled.{_R}")
             return
     else:
         # Non-interactive fallback (tests, pipes)
-        print("\nAvailable mail accounts:")
+        print("  Available mail accounts:")
         for i, acct in enumerate(enabled_accounts, start=1):
-            print(f"  {i}. {acct['name']} ({acct['email']})")
+            print(f"    {i}. {acct['name']} ({acct['email']})")
         while True:
             try:
-                raw = input(f"\nSelect primary account [1-{len(enabled_accounts)}]: ").strip()
+                raw = input(f"\n  Select primary account [1-{len(enabled_accounts)}]: ").strip()
             except KeyboardInterrupt:
-                print("\nSetup cancelled.")
+                print(f"\n  {_D}Setup cancelled.{_R}")
                 return
             except EOFError:
                 raw = "1"
             if raw.isdigit() and 1 <= int(raw) <= len(enabled_accounts):
                 chosen = enabled_accounts[int(raw) - 1]
                 break
-            print(f"Please enter a number between 1 and {len(enabled_accounts)}.")
+            print(f"  Please enter a number between 1 and {len(enabled_accounts)}.")
 
-    # --- Select Gmail accounts ---
+    # --- Step 2: Select Gmail accounts ---
+    _step_header(2, total_steps, "Gmail Accounts",
+                 "Gmail uses different mailbox names ([Gmail]/Spam instead of Junk).")
+
     gmail_accounts: list[str] = []
     if len(enabled_accounts) == 1:
         try:
-            ans = input(f"\nIs '{enabled_accounts[0]['name']}' a Gmail account? [y/N]: ").strip().lower()
+            ans = input(f"  Is '{enabled_accounts[0]['name']}' a Gmail account? [y/N]: ").strip().lower()
         except (KeyboardInterrupt, EOFError):
             ans = "n"
         if ans == "y":
@@ -239,19 +271,18 @@ end tell
     elif _is_interactive():
         try:
             opts = [f"{a['name']} ({a['email']})" for a in enabled_accounts]
-            indices = _checkbox_select("Which accounts are Gmail?", opts)
+            indices = _checkbox_select("  Select your Gmail accounts:", opts)
             gmail_accounts = [enabled_accounts[i]["name"] for i in indices]
         except KeyboardInterrupt:
-            print("\nSetup cancelled.")
+            print(f"\n  {_D}Setup cancelled.{_R}")
             return
     else:
         # Non-interactive fallback
-        print("\nWhich accounts are Gmail? (enables automatic mailbox name translation)")
-        print("Enter numbers separated by commas, or press Enter to skip.")
+        print("  Enter numbers separated by commas, or press Enter to skip.")
         for i, acct in enumerate(enabled_accounts, start=1):
-            print(f"  {i}. {acct['name']} ({acct['email']})")
+            print(f"    {i}. {acct['name']} ({acct['email']})")
         try:
-            raw_gmail = input("Gmail accounts: ").strip()
+            raw_gmail = input("  Gmail accounts: ").strip()
         except (KeyboardInterrupt, EOFError):
             raw_gmail = ""
         if raw_gmail:
@@ -261,20 +292,24 @@ end tell
                     gmail_accounts.append(enabled_accounts[int(part) - 1]["name"])
 
     if gmail_accounts:
-        print("  Mailbox names like 'Spam', 'Trash', 'Sent' will auto-map to [Gmail]/... equivalents.")
+        print(f"  {_D}Mailbox names will auto-translate for: {', '.join(gmail_accounts)}{_R}")
 
-    # --- Todoist API token ---
+    # --- Step 3: Todoist API token ---
+    _step_header(3, total_steps, "Todoist Integration",
+                 "Turn emails into tasks with `my mail to-todoist`.")
+    print(f"  {_D}Get your token: Todoist Settings > Integrations > Developer{_R}")
+
     todoist_token = ""
     try:
-        raw_token = input("\nTodoist API token (press Enter to skip): ").strip()
+        raw_token = input(f"\n  API token {_D}(Enter to skip){_R}: ").strip()
     except KeyboardInterrupt:
-        print("\nSetup cancelled.")
+        print(f"\n  {_D}Setup cancelled.{_R}")
         return
     except EOFError:
         raw_token = ""
     if raw_token:
         if not re.match(r'^[a-f0-9]{40}$', raw_token):
-            print("Warning: Token doesn't look like a standard Todoist API token (expected 40 hex chars). Saving anyway.")
+            print(f"  {_D}Warning: Doesn't match expected format (40 hex chars). Saving anyway.{_R}")
         todoist_token = raw_token
 
     # Build and write config
@@ -291,19 +326,21 @@ end tell
     _save_json(CONFIG_FILE, config)
 
     # Success output
-    success_text = (
-        f"\nConfiguration saved to {CONFIG_FILE}\n"
-        f"  Default account: {chosen['name']} ({chosen['email']})\n"
-    )
+    summary_parts = [f"{chosen['name']}"]
     if gmail_accounts:
-        success_text += f"  Gmail accounts: {', '.join(gmail_accounts)}\n"
+        summary_parts.append(f"Gmail: {len(gmail_accounts)} account{'s' if len(gmail_accounts) != 1 else ''}")
     if todoist_token:
-        success_text += "  Todoist token: saved\n"
-    success_text += (
-        "\nTry these commands to get started:\n"
-        "  my mail inbox          # unread counts\n"
-        "  my mail list           # recent messages\n"
-        "  my mail summary        # AI-concise unread\n"
+        summary_parts.append("Todoist: connected")
+
+    success_text = (
+        f"\n  {_G}Setup complete!{_R}\n\n"
+        f"  {_D}Config saved to {CONFIG_FILE}{_R}\n"
+        f"  {_B}{' · '.join(summary_parts)}{_R}\n"
+        f"\n  {_B}Get started:{_R}\n"
+        f"    {_G}my mail inbox{_R}       {_D}Unread counts across all accounts{_R}\n"
+        f"    {_G}my mail summary{_R}     {_D}AI-concise one-liner per unread{_R}\n"
+        f"    {_G}my mail triage{_R}      {_D}Unread grouped by urgency{_R}\n"
+        f"    {_G}my mail --help{_R}      {_D}See all 49 commands{_R}\n"
     )
 
     if getattr(args, "json", False):
