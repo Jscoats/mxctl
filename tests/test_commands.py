@@ -1,11 +1,10 @@
 """Smoke tests for top 10 mail command functions."""
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
 
 from mxctl.config import FIELD_SEPARATOR
-
 
 # ---------------------------------------------------------------------------
 # cmd_inbox (accounts.py)
@@ -63,8 +62,8 @@ def test_cmd_inbox_empty(monkeypatch, mock_args, capsys):
 
 def test_cmd_inbox_empty_no_config_suggests_init(monkeypatch, mock_args, capsys, tmp_path):
     """Bug fix: cmd_inbox suggests `mxctl init` when config is missing and no accounts found."""
-    from mxctl.commands.mail.accounts import cmd_inbox
     import mxctl.commands.mail.accounts as accounts_mod
+    from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value="")
     monkeypatch.setattr("mxctl.commands.mail.accounts.run", mock_run)
@@ -104,6 +103,7 @@ def test_cmd_inbox_account_filter(monkeypatch, mock_args, capsys):
 def test_cmd_inbox_no_account_flag_iterates_all_accounts(monkeypatch, capsys):
     """Regression: inbox with no -a flag must query all accounts, not just the default."""
     from argparse import Namespace
+
     from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=(
@@ -127,6 +127,7 @@ def test_cmd_inbox_no_account_flag_iterates_all_accounts(monkeypatch, capsys):
 def test_cmd_inbox_with_account_flag_scopes_to_single_account(monkeypatch, capsys):
     """Regression: inbox with -a flag must scope to that account only."""
     from argparse import Namespace
+
     from mxctl.commands.mail.accounts import cmd_inbox
 
     mock_run = Mock(return_value=f"ASU Gmail{FIELD_SEPARATOR}14{FIELD_SEPARATOR}14\n")
@@ -1009,7 +1010,6 @@ def test_cmd_context_basic(monkeypatch, mock_args, capsys):
 def test_cmd_context_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_context --json returns JSON with message and thread."""
     from mxctl.commands.mail.ai import cmd_context
-
     from mxctl.config import RECORD_SEPARATOR
     thread_entry = (
         f"200{chr(0x1F)}Re: Context Subject{chr(0x1F)}other@example.com"
@@ -1037,6 +1037,7 @@ def test_cmd_context_json(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_basic(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related searches and groups by conversation."""
     from unittest.mock import Mock
+
     from mxctl.commands.mail.ai import cmd_find_related
 
     search_result = (
@@ -1057,6 +1058,7 @@ def test_cmd_find_related_basic(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_json(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related JSON output groups by thread."""
     from unittest.mock import Mock
+
     from mxctl.commands.mail.ai import cmd_find_related
 
     search_result = (
@@ -1075,6 +1077,7 @@ def test_cmd_find_related_json(monkeypatch, mock_args, capsys):
 def test_cmd_find_related_empty(monkeypatch, mock_args, capsys):
     """Smoke test: cmd_find_related handles no results."""
     from unittest.mock import Mock
+
     from mxctl.commands.mail.ai import cmd_find_related
 
     mock_run = Mock(return_value="")
@@ -1539,8 +1542,9 @@ def test_cmd_not_junk_all_candidates_fail(monkeypatch, mock_args, capsys):
 
 def test_cmd_junk_cross_account_hint(monkeypatch, mock_args, capsys):
     """Bug fix: cmd_junk shows cross-account hint when message not found and no -a given."""
-    from mxctl.commands.mail.actions import cmd_junk
     import sys
+
+    from mxctl.commands.mail.actions import cmd_junk
 
     def mock_run_fail(script):
         print("Error: Message not found", file=sys.stderr)

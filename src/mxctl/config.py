@@ -13,9 +13,9 @@ This allows existing configs to continue working without modification.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
-import fcntl
 import shutil
 import time
 from contextlib import contextmanager
@@ -116,17 +116,16 @@ def _load_json(path: str) -> dict:
     _migrate_legacy_config()
     if os.path.isfile(path):
         try:
-            with file_lock(path):
-                with open(path) as f:
-                    content = f.read().strip()
-                    if not content:  # Handle empty/truncated files
-                        return {}
-                    return json.loads(content)
+            with file_lock(path), open(path) as f:
+                content = f.read().strip()
+                if not content:  # Handle empty/truncated files
+                    return {}
+                return json.loads(content)
         except json.JSONDecodeError:
             import sys
             print(f"Warning: {path} contains invalid JSON. Using defaults.", file=sys.stderr)
             return {}
-        except IOError:
+        except OSError:
             return {}
     return {}
 

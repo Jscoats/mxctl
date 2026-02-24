@@ -3,7 +3,7 @@
 import json
 import os
 
-from mxctl.config import resolve_account, TEMPLATES_FILE, file_lock
+from mxctl.config import TEMPLATES_FILE, file_lock, resolve_account
 from mxctl.util.applescript import escape, run
 from mxctl.util.formatting import die, format_output
 
@@ -24,12 +24,11 @@ def cmd_draft(args) -> None:
     template_name = getattr(args, "template", None)
     if template_name:
         if os.path.isfile(TEMPLATES_FILE):
-            with file_lock(TEMPLATES_FILE):
-                with open(TEMPLATES_FILE) as f:
-                    try:
-                        templates = json.load(f)
-                    except (json.JSONDecodeError, OSError):
-                        die("Templates file is corrupt. Run 'mxctl templates list' to diagnose.")
+            with file_lock(TEMPLATES_FILE), open(TEMPLATES_FILE) as f:
+                try:
+                    templates = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    die("Templates file is corrupt. Run 'mxctl templates list' to diagnose.")
             if template_name not in templates:
                 die(f"Template '{template_name}' not found. Use 'mxctl templates list' to see available templates.")
             template = templates[template_name]

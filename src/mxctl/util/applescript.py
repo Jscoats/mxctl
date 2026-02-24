@@ -19,7 +19,7 @@ def _warn_automation_once() -> None:
         return
 
     # Check if we've already shown the prompt in a previous session
-    from mxctl.config import get_state, _save_json
+    from mxctl.config import _save_json, get_state
 
     state = get_state()
     if state.get("automation_prompted"):

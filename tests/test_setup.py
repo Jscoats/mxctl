@@ -4,9 +4,7 @@ import json
 import os
 from unittest.mock import Mock
 
-
 from mxctl.config import FIELD_SEPARATOR
-
 
 # ---------------------------------------------------------------------------
 # Helpers

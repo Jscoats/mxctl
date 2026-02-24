@@ -3,10 +3,11 @@
 import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
-import pytest
-from mxctl.config import FIELD_SEPARATOR
-from mxctl.commands.mail.analytics import cmd_stats
 
+import pytest
+
+from mxctl.commands.mail.analytics import cmd_stats
+from mxctl.config import FIELD_SEPARATOR
 
 
 class TestEnhancedStats:

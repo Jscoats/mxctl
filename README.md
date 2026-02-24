@@ -6,6 +6,21 @@
 
 > Apple Mail from your terminal.
 
+## Table of Contents
+
+- [Why This Exists](#why-this-exists)
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Example Output](#example-output)
+- [Command Categories](#command-categories)
+- [Requirements](#requirements)
+- [Usage Tips](#usage-tips)
+- [Built for AI Workflows](#built-for-ai-workflows)
+- [Architecture](#architecture)
+- [Why Not X?](#why-not-x)
+- [Contributing](#contributing)
+
 ## Why This Exists
 
 Use Apple Mail but want to automate it? This CLI gives you full control of Mail.app from the terminal. Every command outputs structured data that works with AI assistants, shell scripts, or status bars -- so you can triage your inbox with Claude, automate workflows with scripts, or batch-process newsletters without opening Mail.app.

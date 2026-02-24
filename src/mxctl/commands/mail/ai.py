@@ -3,9 +3,9 @@
 from collections import defaultdict
 
 from mxctl.config import (
+    APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_DIGEST_LIMIT,
     DEFAULT_MAILBOX,
-    APPLESCRIPT_TIMEOUT_LONG,
     FIELD_SEPARATOR,
     MAX_MESSAGES_BATCH,
     NOREPLY_PATTERNS,
@@ -17,7 +17,6 @@ from mxctl.util.applescript import escape, run, validate_msg_id
 from mxctl.util.applescript_templates import inbox_iterator_all_accounts
 from mxctl.util.formatting import die, format_output, truncate
 from mxctl.util.mail_helpers import extract_display_name, extract_email, normalize_subject, parse_message_line
-
 
 # ---------------------------------------------------------------------------
 # summary — ultra-concise one-liner per unread

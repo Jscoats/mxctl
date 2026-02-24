@@ -1,10 +1,9 @@
 """Todoist integration: create tasks from emails."""
 
 import json
-import socket
 import ssl
-import urllib.request
 import urllib.error
+import urllib.request
 
 from mxctl.config import (
     APPLESCRIPT_TIMEOUT_SHORT,
@@ -14,7 +13,6 @@ from mxctl.config import (
 from mxctl.util.applescript import run, validate_msg_id
 from mxctl.util.formatting import die, format_output
 from mxctl.util.mail_helpers import resolve_message_context
-
 
 # ---------------------------------------------------------------------------
 # to-todoist — create a Todoist task from an email
@@ -82,7 +80,7 @@ def cmd_to_todoist(args) -> None:
             die(f"Todoist API error resolving project ({e.code}): {e.read().decode('utf-8')}")
         except urllib.error.URLError as e:
             die(f"Network error resolving project: {e.reason}")
-        except socket.timeout:
+        except TimeoutError:
             die(f"Todoist API timed out resolving project (>{APPLESCRIPT_TIMEOUT_SHORT}s). Check your network or try again.")
 
     # Build Todoist task payload
@@ -126,7 +124,7 @@ def cmd_to_todoist(args) -> None:
         die(f"Todoist API error ({e.code}): {error_body}")
     except urllib.error.URLError as e:
         die(f"Network error: {e.reason}")
-    except socket.timeout:
+    except TimeoutError:
         die(f"Todoist API timed out creating task (>{APPLESCRIPT_TIMEOUT_SHORT}s). Check your network or try again.")
 
 

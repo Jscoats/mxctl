@@ -1,8 +1,8 @@
 """Tests for error handling and edge cases."""
 
+import os
 from argparse import Namespace
 from unittest.mock import Mock
-import os
 
 import pytest
 

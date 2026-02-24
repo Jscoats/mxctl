@@ -6,7 +6,6 @@ from argparse import Namespace
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -105,7 +104,7 @@ class TestTemplatesList:
 
 class TestTemplatesCreate:
     def test_create_with_flags(self, monkeypatch, capsys, tmp_path):
-        from mxctl.commands.mail.templates import cmd_templates_create, _load_templates
+        from mxctl.commands.mail.templates import _load_templates, cmd_templates_create
 
         tpl_file = str(tmp_path / "templates.json")
         monkeypatch.setattr("mxctl.commands.mail.templates.TEMPLATES_FILE", tpl_file)
@@ -161,7 +160,7 @@ class TestTemplatesShow:
 
 class TestTemplatesDelete:
     def test_delete_existing(self, monkeypatch, capsys, tmp_path):
-        from mxctl.commands.mail.templates import _save_templates, _load_templates, cmd_templates_delete
+        from mxctl.commands.mail.templates import _load_templates, _save_templates, cmd_templates_delete
 
         tpl_file = str(tmp_path / "templates.json")
         monkeypatch.setattr("mxctl.commands.mail.templates.TEMPLATES_FILE", tpl_file)

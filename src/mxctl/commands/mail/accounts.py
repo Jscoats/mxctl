@@ -2,10 +2,9 @@
 
 import os
 
-from mxctl.config import CONFIG_FILE, resolve_account, save_message_aliases, FIELD_SEPARATOR
+from mxctl.config import CONFIG_FILE, FIELD_SEPARATOR, resolve_account, save_message_aliases
 from mxctl.util.applescript import escape, run
-from mxctl.util.formatting import truncate, format_output
-
+from mxctl.util.formatting import format_output, truncate
 
 # ---------------------------------------------------------------------------
 # inbox

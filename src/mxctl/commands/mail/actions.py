@@ -5,15 +5,15 @@ import re
 import socket
 import ssl
 import subprocess
+import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.error
 
 from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT, FIELD_SEPARATOR, resolve_account
 from mxctl.util.applescript import escape, run, validate_msg_id
 from mxctl.util.applescript_templates import set_message_property
 from mxctl.util.formatting import die, format_output, truncate
-from mxctl.util.mail_helpers import resolve_mailbox, resolve_message_context, parse_email_headers
+from mxctl.util.mail_helpers import parse_email_headers, resolve_mailbox, resolve_message_context
 
 
 def _mark_read_status(args, read_status: bool) -> None:

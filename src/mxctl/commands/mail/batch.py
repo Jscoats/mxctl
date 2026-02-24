@@ -3,6 +3,7 @@
 import sys
 from datetime import datetime, timedelta
 
+from mxctl.commands.mail.undo import log_batch_operation, log_fence_operation
 from mxctl.config import (
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_MAILBOX,
@@ -11,9 +12,7 @@ from mxctl.config import (
 from mxctl.util.applescript import escape, run
 from mxctl.util.dates import to_applescript_date
 from mxctl.util.formatting import die, format_output
-from mxctl.commands.mail.undo import log_batch_operation, log_fence_operation
 from mxctl.util.mail_helpers import resolve_mailbox
-
 
 # ---------------------------------------------------------------------------
 # batch-read — mark all as read in a mailbox

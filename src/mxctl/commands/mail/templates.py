@@ -4,27 +4,25 @@ import json
 import os
 
 from mxctl.config import CONFIG_DIR, TEMPLATES_FILE, file_lock
-from mxctl.util.formatting import format_output, die
+from mxctl.util.formatting import die, format_output
 
 
 def _load_templates() -> dict:
     """Load templates from disk."""
     if os.path.isfile(TEMPLATES_FILE):
-        with file_lock(TEMPLATES_FILE):
-            with open(TEMPLATES_FILE) as f:
-                try:
-                    return json.load(f)
-                except (json.JSONDecodeError, OSError):
-                    return {}
+        with file_lock(TEMPLATES_FILE), open(TEMPLATES_FILE) as f:
+            try:
+                return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                return {}
     return {}
 
 
 def _save_templates(templates: dict) -> None:
     """Save templates to disk."""
     os.makedirs(CONFIG_DIR, exist_ok=True)
-    with file_lock(TEMPLATES_FILE):
-        with open(TEMPLATES_FILE, "w") as f:
-            json.dump(templates, f, indent=2)
+    with file_lock(TEMPLATES_FILE), open(TEMPLATES_FILE, "w") as f:
+        json.dump(templates, f, indent=2)
     os.chmod(TEMPLATES_FILE, 0o600)
 
 

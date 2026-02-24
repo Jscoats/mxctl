@@ -1,12 +1,12 @@
 """Tests for mailbox management commands (manage.py)."""
 
+import subprocess
 from argparse import Namespace
 from unittest.mock import Mock
-import subprocess
 
 import pytest
 
-from mxctl.commands.mail.manage import cmd_empty_trash, cmd_create_mailbox, cmd_delete_mailbox
+from mxctl.commands.mail.manage import cmd_create_mailbox, cmd_delete_mailbox, cmd_empty_trash
 
 
 def test_cmd_empty_trash_single_account(monkeypatch, capsys):

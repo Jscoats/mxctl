@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-24
+
+### Changed
+
+- **Renamed project** — `my-apple-mail-cli` is now `mxctl` ("mail control")
+- **Flattened CLI** — `my mail inbox` is now `mxctl inbox` (removed `mail` subcommand layer)
+- **Config path** — moved from `~/.config/my/` to `~/.config/mxctl/` with automatic one-time migration
+- **Version bump** — 0.2.0 → 0.3.0 (breaking: new binary name and command structure)
+- **Package name** — Python package renamed from `my_cli` to `mxctl`
+- **GitHub repo** — `Jscoats/my-apple-mail-cli` → `Jscoats/mxctl`
+- Test suite expanded to 422 tests
+
 ## [0.2.0] - 2026-02-22
 
 ### Added

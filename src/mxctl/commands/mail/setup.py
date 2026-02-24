@@ -3,11 +3,17 @@
 import os
 import re
 import sys
-import tty
 import termios
+import tty
 
 from mxctl import __version__
-from mxctl.config import CONFIG_DIR, CONFIG_FILE, FIELD_SEPARATOR, get_config, _save_json  # noqa: F401 — CONFIG_DIR imported for test monkeypatching
+from mxctl.config import (  # noqa: F401 — CONFIG_DIR imported for test monkeypatching
+    CONFIG_DIR,
+    CONFIG_FILE,
+    FIELD_SEPARATOR,
+    _save_json,
+    get_config,
+)
 from mxctl.util.applescript import run
 from mxctl.util.formatting import format_output
 

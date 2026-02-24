@@ -18,7 +18,6 @@ from mxctl.util.applescript import escape, run, validate_msg_id
 from mxctl.util.formatting import die, format_output, truncate
 from mxctl.util.mail_helpers import extract_email, normalize_subject, parse_message_line
 
-
 # ---------------------------------------------------------------------------
 # export — save message(s) as markdown
 # ---------------------------------------------------------------------------

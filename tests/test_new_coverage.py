@@ -12,12 +12,11 @@ import os
 import socket
 from argparse import Namespace
 from io import BytesIO
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from mxctl.config import FIELD_SEPARATOR
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -191,8 +190,9 @@ class TestUnsubscribeOneClick:
     @patch("mxctl.commands.mail.actions.subprocess.run")
     def test_one_click_fallback_to_browser(self, mock_subprocess, mock_urlopen, mock_private, mock_run, capsys):
         """When one-click POST fails, fall back to opening the browser."""
-        from mxctl.commands.mail.actions import cmd_unsubscribe
         import urllib.error
+
+        from mxctl.commands.mail.actions import cmd_unsubscribe
 
         mock_run.return_value = (
             f"Newsletter"
@@ -418,6 +418,7 @@ class TestTodoistIntegration:
     def test_http_error_dies(self, mock_urlopen, mock_config, mock_run):
         """When Todoist API returns HTTP error, die() is called."""
         import urllib.error
+
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
@@ -1022,14 +1023,14 @@ class TestTodoistTimeoutAndTokenValidation:
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
     def test_socket_timeout_on_task_create_dies(self, mock_urlopen, mock_config, mock_run, capsys):
         """socket.timeout during task creation produces a clean error (no hang)."""
-        import socket
+
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         mock_config.return_value = {"todoist_api_token": "fake-token"}
         mock_run.return_value = (
             f"Subject{FIELD_SEPARATOR}sender@ex.com{FIELD_SEPARATOR}Tuesday"
         )
-        mock_urlopen.side_effect = socket.timeout("timed out")
+        mock_urlopen.side_effect = TimeoutError("timed out")
 
         args = self._make_args()
         with pytest.raises(SystemExit) as exc_info:
@@ -1076,7 +1077,8 @@ class TestNotJunkSubjectSenderSearch:
     def test_try_not_junk_uses_subject_sender_when_provided(self):
         """_try_not_junk_in_mailbox builds subject+sender AppleScript when args are given."""
         import subprocess as _subprocess
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
@@ -1099,7 +1101,8 @@ class TestNotJunkSubjectSenderSearch:
     def test_try_not_junk_falls_back_to_id_when_no_subject(self):
         """_try_not_junk_in_mailbox uses ID lookup when subject/sender are empty."""
         import subprocess as _subprocess
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
@@ -1119,7 +1122,8 @@ class TestNotJunkSubjectSenderSearch:
     def test_try_not_junk_returns_none_on_applescript_error(self):
         """Any AppleScript error returns None (no internal error leaks to user)."""
         import subprocess as _subprocess
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from mxctl.commands.mail.actions import _try_not_junk_in_mailbox
 
         mock_result = MagicMock()
@@ -1139,6 +1143,7 @@ class TestNotJunkSubjectSenderSearch:
         import subprocess as _subprocess
         from argparse import Namespace
         from unittest.mock import MagicMock, patch
+
         from mxctl.commands.mail.actions import cmd_not_junk
         from mxctl.config import FIELD_SEPARATOR
 

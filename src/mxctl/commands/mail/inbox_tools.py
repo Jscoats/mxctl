@@ -19,7 +19,6 @@ from mxctl.util.dates import to_applescript_date
 from mxctl.util.formatting import format_output, truncate
 from mxctl.util.mail_helpers import extract_display_name, extract_email, parse_message_line
 
-
 # ---------------------------------------------------------------------------
 # Private helpers — AppleScript builders
 # ---------------------------------------------------------------------------

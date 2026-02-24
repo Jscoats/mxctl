@@ -7,10 +7,10 @@ import os
 from datetime import datetime
 
 from mxctl.config import (
-    CONFIG_DIR,
     APPLESCRIPT_TIMEOUT_LONG,
-    file_lock,
+    CONFIG_DIR,
     UNDO_LOG_FILE,
+    file_lock,
 )
 from mxctl.util.applescript import escape, run
 from mxctl.util.formatting import die, format_output
@@ -47,12 +47,11 @@ def _load_undo_log(include_stale: bool = False) -> list[dict]:
     """
     if not os.path.isfile(UNDO_LOG_FILE):
         return []
-    with file_lock(UNDO_LOG_FILE):
-        with open(UNDO_LOG_FILE) as f:
-            try:
-                raw = json.load(f)
-            except (json.JSONDecodeError, OSError):
-                return []
+    with file_lock(UNDO_LOG_FILE), open(UNDO_LOG_FILE) as f:
+        try:
+            raw = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
     if include_stale:
         return list(raw)
     return [entry for entry in raw if _is_fresh(entry)]
@@ -63,9 +62,8 @@ def _save_undo_log(operations: list[dict]) -> None:
     os.makedirs(CONFIG_DIR, exist_ok=True)
     # Keep only the most recent operations
     trimmed = operations[-MAX_UNDO_OPERATIONS:]
-    with file_lock(UNDO_LOG_FILE):
-        with open(UNDO_LOG_FILE, "w") as f:
-            json.dump(trimmed, f, indent=2)
+    with file_lock(UNDO_LOG_FILE), open(UNDO_LOG_FILE, "w") as f:
+        json.dump(trimmed, f, indent=2)
 
 
 def log_batch_operation(

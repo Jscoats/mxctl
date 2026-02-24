@@ -5,21 +5,21 @@ import sys
 
 from mxctl import __version__
 from mxctl.commands.mail.accounts import register as register_accounts
-from mxctl.commands.mail.messages import register as register_messages
 from mxctl.commands.mail.actions import register as register_actions
-from mxctl.commands.mail.compose import register as register_compose
-from mxctl.commands.mail.attachments import register as register_attachments
-from mxctl.commands.mail.manage import register as register_manage
-from mxctl.commands.mail.batch import register as register_batch
-from mxctl.commands.mail.analytics import register as register_analytics
-from mxctl.commands.mail.system import register as register_system
-from mxctl.commands.mail.composite import register as register_composite
 from mxctl.commands.mail.ai import register as register_ai
-from mxctl.commands.mail.todoist_integration import register as register_todoist
+from mxctl.commands.mail.analytics import register as register_analytics
+from mxctl.commands.mail.attachments import register as register_attachments
+from mxctl.commands.mail.batch import register as register_batch
+from mxctl.commands.mail.compose import register as register_compose
+from mxctl.commands.mail.composite import register as register_composite
 from mxctl.commands.mail.inbox_tools import register as register_inbox_tools
-from mxctl.commands.mail.templates import register as register_templates
-from mxctl.commands.mail.undo import register as register_undo
+from mxctl.commands.mail.manage import register as register_manage
+from mxctl.commands.mail.messages import register as register_messages
 from mxctl.commands.mail.setup import register as register_setup
+from mxctl.commands.mail.system import register as register_system
+from mxctl.commands.mail.templates import register as register_templates
+from mxctl.commands.mail.todoist_integration import register as register_todoist
+from mxctl.commands.mail.undo import register as register_undo
 
 _GROUPED_HELP = """\
 Apple Mail from your terminal.

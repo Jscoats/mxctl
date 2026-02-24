@@ -9,7 +9,6 @@ from mxctl.util.applescript import escape, run, validate_msg_id
 from mxctl.util.formatting import die, format_output, truncate
 from mxctl.util.mail_helpers import parse_email_headers
 
-
 # ---------------------------------------------------------------------------
 # check — trigger mail fetch
 # ---------------------------------------------------------------------------

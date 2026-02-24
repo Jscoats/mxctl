@@ -20,8 +20,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -94,27 +92,24 @@ class TestVersionFlag:
 
     def test_version_flag_exits(self):
         from mxctl.main import main
-        with pytest.raises(SystemExit) as exc_info:
-            with patch("sys.argv", ["mxctl", "--version"]):
-                main()
+        with pytest.raises(SystemExit) as exc_info, patch("sys.argv", ["mxctl", "--version"]):
+            main()
         # argparse --version exits with code 0
         assert exc_info.value.code == 0
 
     def test_version_flag_output(self, capsys):
         from mxctl.main import main
-        with pytest.raises(SystemExit):
-            with patch("sys.argv", ["mxctl", "--version"]):
-                main()
+        with pytest.raises(SystemExit), patch("sys.argv", ["mxctl", "--version"]):
+            main()
         captured = capsys.readouterr()
         # argparse prints version to stdout
         assert "mxctl" in captured.out or "mxctl" in captured.err
 
     def test_version_includes_semver(self, capsys):
-        from mxctl.main import main
         from mxctl import __version__
-        with pytest.raises(SystemExit):
-            with patch("sys.argv", ["mxctl", "--version"]):
-                main()
+        from mxctl.main import main
+        with pytest.raises(SystemExit), patch("sys.argv", ["mxctl", "--version"]):
+            main()
         captured = capsys.readouterr()
         combined = captured.out + captured.err
         assert __version__ in combined
@@ -149,8 +144,9 @@ class TestResolveMessageContextInitErrors:
 
     def test_config_exists_but_no_default_account(self, tmp_path, monkeypatch, capsys):
         """When config exists but no default is set, error mentions configure one."""
-        from mxctl.util.mail_helpers import resolve_message_context
         import json as json_mod
+
+        from mxctl.util.mail_helpers import resolve_message_context
 
         config_dir = tmp_path / "config"
         config_dir.mkdir()

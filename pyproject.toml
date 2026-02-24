@@ -10,14 +10,30 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{name = "Jscoats"}]
+keywords = ["apple-mail", "cli", "macos", "email", "terminal", "applescript", "productivity"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Email",
+    "Topic :: Utilities",
+]
 
 [project.urls]
 Homepage = "https://github.com/Jscoats/mxctl"
 Repository = "https://github.com/Jscoats/mxctl"
 Issues = "https://github.com/Jscoats/mxctl/issues"
+Changelog = "https://github.com/Jscoats/mxctl/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff", "pre-commit"]
 
 [project.scripts]
 mxctl = "mxctl.main:main"
@@ -28,3 +44,12 @@ packages = ["src/mxctl"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 140
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501", "SIM105", "SIM108"]

@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 from mxctl.config import (
     APPLESCRIPT_TIMEOUT_LONG,
+    DEFAULT_DIGEST_LIMIT,
     DEFAULT_MAILBOX,
     DEFAULT_MESSAGE_LIMIT,
-    DEFAULT_DIGEST_LIMIT,
     DEFAULT_TOP_SENDERS_LIMIT,
     FIELD_SEPARATOR,
     MAX_MESSAGES_BATCH,
@@ -19,7 +19,6 @@ from mxctl.util.applescript import escape, run
 from mxctl.util.dates import to_applescript_date
 from mxctl.util.formatting import die, format_output, truncate
 from mxctl.util.mail_helpers import extract_email, parse_message_line
-
 
 # ---------------------------------------------------------------------------
 # top-senders
@@ -129,7 +128,7 @@ def cmd_digest(args) -> None:
 
     # Collect all messages into a flat list for sequential aliases
     all_messages = []
-    for domain, msgs in sorted(groups.items(), key=lambda x: -len(x[1])):
+    for _domain, msgs in sorted(groups.items(), key=lambda x: -len(x[1])):
         all_messages.extend(msgs)
     save_message_aliases([m["id"] for m in all_messages])
     for i, m in enumerate(all_messages, 1):

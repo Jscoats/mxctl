@@ -15,7 +15,6 @@ from mxctl.util.dates import parse_date, to_applescript_date
 from mxctl.util.formatting import format_output, truncate
 from mxctl.util.mail_helpers import parse_message_line, resolve_mailbox, resolve_message_context
 
-
 # ---------------------------------------------------------------------------
 # list
 # ---------------------------------------------------------------------------
