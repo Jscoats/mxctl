@@ -49,6 +49,12 @@ pip install git+https://github.com/Jscoats/mxctl
 uv tool install git+https://github.com/Jscoats/mxctl
 ```
 
+Then run the setup wizard — it detects your Mail.app accounts, configures Gmail mailbox translation, and optionally connects Todoist:
+
+<p align="center">
+  <img src="demo/init-demo.gif" alt="mxctl init — setup wizard detecting accounts, configuring Gmail, and connecting Todoist" width="700">
+</p>
+
 ## Quick Start
 
 ```bash
