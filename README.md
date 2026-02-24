@@ -13,9 +13,11 @@ Use Apple Mail but want to automate it? This CLI gives you full control of Mail.
 ## 🚀 Key Features
 
 - **49 Commands** - Everything from basic operations to advanced batch processing
+- **Any Account, One Interface** - iCloud, Gmail, Outlook, Exchange, IMAP — whatever Mail.app has, this works with
+- **Gmail Mailbox Translation** - Automatically maps standard names (`Trash`, `Spam`, `Sent`) to Gmail's `[Gmail]/...` paths
 - **Built for AI Workflows** - Every command supports `--json` output designed for AI assistants to read and act on
+- **Todoist Integration** - Turn any email into a task with `my mail to-todoist` (project, priority, due date)
 - **Batch Operations with Undo** - Process hundreds of emails safely with rollback support
-- **Productivity Integrations** - Todoist, templates, scripting, status bar integration
 - **Zero Dependencies** - Pure Python stdlib, no external packages required
 - **Works with Your Existing Setup** - Doesn't replace Mail.app, extends it
 
@@ -179,14 +181,59 @@ Triage — 15 Unread Messages
 ## 💡 Usage Tips
 
 ### Multi-Account Support
+
+Works with any combination of iCloud, Gmail, Outlook, Exchange, or custom IMAP accounts — whatever you have configured in Mail.app.
+
 ```bash
-# Use -a to specify account
+# Commands default to your primary account (set during init)
+my mail list
+
+# Switch accounts with -a
 my mail list -a "Work Email"
 my mail list -a "Personal"
 
-# Set default account in ~/.config/my/config.json
-{"mail": {"default_account": "iCloud"}}
+# Commands like inbox, summary, and triage scan ALL accounts automatically
+my mail inbox
 ```
+
+**Three-tier account resolution:** Commands use the first available: (1) explicit `-a` flag, (2) default account from config, (3) last-used account from state.
+
+### Gmail Mailbox Translation
+
+Gmail uses non-standard mailbox names (`[Gmail]/Spam` instead of `Junk`, `[Gmail]/Sent Mail` instead of `Sent Messages`, etc.). If you tag your Gmail accounts during `my mail init`, the CLI auto-translates standard names so you don't have to remember Gmail's conventions.
+
+```bash
+# These just work — no need to type [Gmail]/... paths
+my mail list -a "Work Gmail" -m Trash     # → [Gmail]/Trash
+my mail list -a "Work Gmail" -m Spam      # → [Gmail]/Spam
+my mail list -a "Work Gmail" -m Sent      # → [Gmail]/Sent Mail
+my mail list -a "Work Gmail" -m Archive   # → [Gmail]/All Mail
+
+# iCloud and other accounts pass through unchanged
+my mail list -a "iCloud" -m Trash         # → Trash (no translation)
+```
+
+Supported translations: `Trash`, `Spam`/`Junk`, `Sent`/`Sent Messages`, `Archive`/`All Mail`, `Drafts`, `Starred`, `Important`.
+
+### Todoist Integration
+
+Turn any email into a Todoist task without leaving the terminal. The task includes the email subject, sender, and a link back to the message.
+
+```bash
+# Set up during init, or add manually to ~/.config/my/config.json
+my mail init  # step 3 prompts for your Todoist API token
+
+# Send an email to Todoist
+my mail to-todoist 123
+
+# With project and priority
+my mail to-todoist 123 --project "Work" --priority 3
+
+# With a due date (natural language)
+my mail to-todoist 123 --due "next Monday"
+```
+
+To get your token: [Todoist Settings → Integrations → Developer](https://todoist.com/prefs/integrations)
 
 ### JSON Output for Automation
 ```bash
@@ -197,7 +244,7 @@ my mail search "invoice" --json | jq '.[].subject'
 
 ### Export Messages
 ```bash
-# Export a single message to ~/Documents/mail/
+# Export a single message
 my mail export 123 --to ~/Documents/mail/ -a "iCloud"
 
 # Bulk export all messages in a mailbox
@@ -208,17 +255,6 @@ my mail export "INBOX" --to ~/Documents/mail/ -a "iCloud" --after 2026-01-01
 ```
 
 Note: The destination flag is `--to` (not `--dest`).
-
-### Todoist Integration
-```bash
-# Add your Todoist API token to ~/.config/my/config.json
-{"mail": {"default_account": "iCloud"}, "todoist_api_token": "your-token-here"}
-
-# Then send any email as a Todoist task
-my mail to-todoist 123 --project Work
-```
-
-To get your token: [Todoist Settings → Integrations → Developer](https://todoist.com/prefs/integrations)
 
 ### Email Templates
 ```bash
