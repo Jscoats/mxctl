@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -34,3 +35,9 @@ jobs:
           body_path: /tmp/release-notes.md
           draft: false
           prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') }}
+
+      - name: Build package
+        run: pip install build && python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
