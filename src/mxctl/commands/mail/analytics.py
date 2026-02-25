@@ -24,6 +24,7 @@ from mxctl.util.mail_helpers import extract_email, parse_message_line
 # top-senders
 # ---------------------------------------------------------------------------
 
+
 def cmd_top_senders(args) -> None:
     """Show most frequent email senders over a time period."""
     days = getattr(args, "days", 30)
@@ -60,8 +61,7 @@ def cmd_top_senders(args) -> None:
 
     result = run(script, timeout=APPLESCRIPT_TIMEOUT_LONG)
     if not result.strip():
-        format_output(args, f"No messages found in the last {days} days.",
-                      json_data={"days": days, "senders": []})
+        format_output(args, f"No messages found in the last {days} days.", json_data={"days": days, "senders": []})
         return
 
     counter = Counter(line.strip() for line in result.strip().split("\n") if line.strip())
@@ -76,6 +76,7 @@ def cmd_top_senders(args) -> None:
 # ---------------------------------------------------------------------------
 # digest — grouped unread summary
 # ---------------------------------------------------------------------------
+
 
 def cmd_digest(args) -> None:
     """Show unread messages grouped by sender domain."""
@@ -150,6 +151,7 @@ def cmd_digest(args) -> None:
 # stats
 # ---------------------------------------------------------------------------
 
+
 def cmd_stats(args) -> None:
     """Show message count and unread count for a mailbox, or account-wide stats with --all."""
     show_all = getattr(args, "all", False)
@@ -210,8 +212,7 @@ def cmd_stats(args) -> None:
         lines = result.strip().split("\n")
         if not lines:  # pragma: no cover — str.split() always returns at least [""]
             scope = f"account '{account}'" if explicit_account else "any account"
-            format_output(args, f"No mailboxes found in {scope}.",
-                          json_data={"mailboxes": []})
+            format_output(args, f"No mailboxes found in {scope}.", json_data={"mailboxes": []})
             return
 
         # First line has grand totals
@@ -226,12 +227,14 @@ def cmd_stats(args) -> None:
                 continue
             parts = line.split(FIELD_SEPARATOR)
             if len(parts) >= 4:
-                mailboxes.append({
-                    "account": parts[0],
-                    "name": parts[1],
-                    "total": int(parts[2]) if parts[2].isdigit() else 0,
-                    "unread": int(parts[3]) if parts[3].isdigit() else 0,
-                })
+                mailboxes.append(
+                    {
+                        "account": parts[0],
+                        "name": parts[1],
+                        "total": int(parts[2]) if parts[2].isdigit() else 0,
+                        "unread": int(parts[3]) if parts[3].isdigit() else 0,
+                    }
+                )
 
         # Build text output — use explicit_account so resolved defaults don't bleed in.
         scope_label = f"Account: {account}" if explicit_account else "All Accounts"
@@ -242,12 +245,16 @@ def cmd_stats(args) -> None:
             acct_prefix = "" if explicit_account else f"[{mb['account']}] "
             text += f"\n  {acct_prefix}{mb['name']}: {mb['total']} messages, {mb['unread']} unread"
 
-        format_output(args, text, json_data={
-            "scope": account or "all",
-            "total_messages": grand_total,
-            "total_unread": grand_unread,
-            "mailboxes": mailboxes,
-        })
+        format_output(
+            args,
+            text,
+            json_data={
+                "scope": account if explicit_account else "all",
+                "total_messages": grand_total,
+                "total_unread": grand_unread,
+                "mailboxes": mailboxes,
+            },
+        )
     else:
         # Single mailbox stats (existing behavior)
         if not account:
@@ -270,13 +277,17 @@ def cmd_stats(args) -> None:
         total = int(parts[0]) if len(parts) >= 1 and parts[0].isdigit() else 0
         unread = int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else 0
 
-        format_output(args, f"{mailbox} [{account}]: {total} messages, {unread} unread",
-                      json_data={"mailbox": mailbox, "account": account, "total": total, "unread": unread})
+        format_output(
+            args,
+            f"{mailbox} [{account}]: {total} messages, {unread} unread",
+            json_data={"mailbox": mailbox, "account": account, "total": total, "unread": unread},
+        )
 
 
 # ---------------------------------------------------------------------------
 # show-flagged — list all flagged messages
 # ---------------------------------------------------------------------------
+
 
 def cmd_show_flagged(args) -> None:
     """List all flagged messages."""
@@ -332,8 +343,7 @@ def cmd_show_flagged(args) -> None:
 
     if not result.strip():
         scope = f" in account '{account}'" if account else " across all accounts"
-        format_output(args, f"No flagged messages found{scope}.",
-                      json_data={"flagged_messages": []})
+        format_output(args, f"No flagged messages found{scope}.", json_data={"flagged_messages": []})
         return
 
     # Build JSON data
@@ -363,6 +373,7 @@ def cmd_show_flagged(args) -> None:
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
+
 
 def register(subparsers) -> None:
     """Register analytics mail subcommands."""

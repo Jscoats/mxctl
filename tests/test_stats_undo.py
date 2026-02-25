@@ -73,6 +73,7 @@ class TestUndoLogging:
     def test_log_batch_operation_creates_entry(self, tmp_path, monkeypatch):
         """Test that logging a batch operation creates a proper entry."""
         import mxctl.commands.mail.undo as undo_module
+
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -97,6 +98,7 @@ class TestUndoLogging:
     def test_undo_log_keeps_only_last_10_operations(self, tmp_path, monkeypatch):
         """Test that undo log is trimmed to MAX_UNDO_OPERATIONS."""
         import mxctl.commands.mail.undo as undo_module
+
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -115,6 +117,7 @@ class TestUndoLogging:
     def test_undo_list_shows_recent_operations(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that undo --list shows recent operations."""
         import mxctl.commands.mail.undo as undo_module
+
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -137,6 +140,7 @@ class TestUndoLogging:
     def test_undo_list_empty_when_no_operations(self, tmp_path, monkeypatch, mock_args, capsys):
         """Test that undo --list shows appropriate message when empty."""
         import mxctl.commands.mail.undo as undo_module
+
         test_log = tmp_path / "mail-undo-empty.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
@@ -155,10 +159,17 @@ class TestBatchDelete:
         """Test --from-sender dry run reports match count without deleting."""
         mock_run.return_value = "5"  # count script returns 5
         args = mock_args(
-            account="iCloud", mailbox=None, older_than=None,
-            from_sender="noreply@example.com", dry_run=True, force=False, limit=None, json=False,
+            account="iCloud",
+            mailbox=None,
+            older_than=None,
+            from_sender="noreply@example.com",
+            dry_run=True,
+            force=False,
+            limit=None,
+            json=False,
         )
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -173,10 +184,17 @@ class TestBatchDelete:
         """Test --from-sender without -m uses all-mailboxes script."""
         mock_run.side_effect = ["3", "3\n101\n102\n103"]  # count, then delete
         args = mock_args(
-            account="iCloud", mailbox=None, older_than=None,
-            from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
+            account="iCloud",
+            mailbox=None,
+            older_than=None,
+            from_sender="spam@example.com",
+            dry_run=False,
+            force=True,
+            limit=None,
+            json=False,
         )
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -191,10 +209,17 @@ class TestBatchDelete:
         """Test --from-sender -m scopes to a single mailbox."""
         mock_run.side_effect = ["2", "2\n201\n202"]
         args = mock_args(
-            account="iCloud", mailbox="Junk", older_than=None,
-            from_sender="spam@example.com", dry_run=False, force=True, limit=None, json=False,
+            account="iCloud",
+            mailbox="Junk",
+            older_than=None,
+            from_sender="spam@example.com",
+            dry_run=False,
+            force=True,
+            limit=None,
+            json=False,
         )
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         cmd_batch_delete(args)
 
         captured = capsys.readouterr()
@@ -207,10 +232,17 @@ class TestBatchDelete:
         """Test --from-sender + --older-than builds combined where clause."""
         mock_run.side_effect = ["1", "1\n301"]
         args = mock_args(
-            account="iCloud", mailbox="INBOX", older_than=30,
-            from_sender="old@example.com", dry_run=False, force=True, limit=None, json=False,
+            account="iCloud",
+            mailbox="INBOX",
+            older_than=30,
+            from_sender="old@example.com",
+            dry_run=False,
+            force=True,
+            limit=None,
+            json=False,
         )
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         cmd_batch_delete(args)
 
         count_script = mock_run.call_args_list[0][0][0]
@@ -220,9 +252,16 @@ class TestBatchDelete:
     def test_batch_delete_no_filters_raises(self, mock_args):
         """Test that providing neither --from-sender nor --older-than exits."""
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         args = mock_args(
-            account="iCloud", mailbox="INBOX", older_than=None,
-            from_sender=None, dry_run=False, force=False, limit=None, json=False,
+            account="iCloud",
+            mailbox="INBOX",
+            older_than=None,
+            from_sender=None,
+            dry_run=False,
+            force=False,
+            limit=None,
+            json=False,
         )
         with pytest.raises(SystemExit):
             cmd_batch_delete(args)
@@ -230,9 +269,16 @@ class TestBatchDelete:
     def test_batch_delete_older_than_without_mailbox_raises(self, mock_args):
         """Test that --older-than alone without -m exits for safety."""
         from mxctl.commands.mail.batch import cmd_batch_delete
+
         args = mock_args(
-            account="iCloud", mailbox=None, older_than=30,
-            from_sender=None, dry_run=False, force=False, limit=None, json=False,
+            account="iCloud",
+            mailbox=None,
+            older_than=30,
+            from_sender=None,
+            dry_run=False,
+            force=False,
+            limit=None,
+            json=False,
         )
         with pytest.raises(SystemExit):
             cmd_batch_delete(args)
@@ -319,16 +365,22 @@ class TestUndoStaleness:
 
         # Write a stale entry directly (60 minutes ago)
         stale_ts = (datetime.now() - timedelta(minutes=60)).isoformat()
-        test_log.write_text(json.dumps([{
-            "timestamp": stale_ts,
-            "operation": "batch-delete",
-            "account": "iCloud",
-            "message_ids": [999],
-            "source_mailbox": "INBOX",
-            "dest_mailbox": None,
-            "sender": None,
-            "older_than_days": None,
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": stale_ts,
+                        "operation": "batch-delete",
+                        "account": "iCloud",
+                        "message_ids": [999],
+                        "source_mailbox": "INBOX",
+                        "dest_mailbox": None,
+                        "sender": None,
+                        "older_than_days": None,
+                    }
+                ]
+            )
+        )
 
         args = mock_args(json=False, force=False)
         with pytest.raises(SystemExit):
@@ -342,16 +394,22 @@ class TestUndoStaleness:
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
         stale_ts = (datetime.now() - timedelta(minutes=60)).isoformat()
-        test_log.write_text(json.dumps([{
-            "timestamp": stale_ts,
-            "operation": "batch-delete",
-            "account": "iCloud",
-            "message_ids": [999],
-            "source_mailbox": "INBOX",
-            "dest_mailbox": None,
-            "sender": None,
-            "older_than_days": None,
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": stale_ts,
+                        "operation": "batch-delete",
+                        "account": "iCloud",
+                        "message_ids": [999],
+                        "source_mailbox": "INBOX",
+                        "dest_mailbox": None,
+                        "sender": None,
+                        "older_than_days": None,
+                    }
+                ]
+            )
+        )
 
         mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
@@ -370,16 +428,22 @@ class TestUndoStaleness:
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
         stale_ts = (datetime.now() - timedelta(minutes=45)).isoformat()
-        test_log.write_text(json.dumps([{
-            "timestamp": stale_ts,
-            "operation": "batch-move",
-            "account": "iCloud",
-            "message_ids": [888],
-            "source_mailbox": None,
-            "dest_mailbox": "Archive",
-            "sender": "old@example.com",
-            "older_than_days": None,
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": stale_ts,
+                        "operation": "batch-move",
+                        "account": "iCloud",
+                        "message_ids": [888],
+                        "source_mailbox": None,
+                        "dest_mailbox": "Archive",
+                        "sender": "old@example.com",
+                        "older_than_days": None,
+                    }
+                ]
+            )
+        )
 
         args = mock_args(json=False, force=False)
         with pytest.raises(SystemExit):
@@ -485,12 +549,18 @@ class TestLoadUndoLogEdgeCases:
 
         test_log = tmp_path / "mail-undo.json"
         stale_ts = (datetime.now() - timedelta(minutes=60)).isoformat()
-        test_log.write_text(json.dumps([{
-            "timestamp": stale_ts,
-            "operation": "batch-move",
-            "account": "iCloud",
-            "message_ids": [1],
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": stale_ts,
+                        "operation": "batch-move",
+                        "account": "iCloud",
+                        "message_ids": [1],
+                    }
+                ]
+            )
+        )
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
         # Without include_stale: empty (stale entry filtered)
@@ -650,13 +720,19 @@ class TestCmdUndoEdgeCases:
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
         # Manually write an entry with empty message_ids
-        test_log.write_text(json.dumps([{
-            "timestamp": datetime.now().isoformat(),
-            "operation": "batch-move",
-            "account": "iCloud",
-            "message_ids": [],
-            "dest_mailbox": "Archive",
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "operation": "batch-move",
+                        "account": "iCloud",
+                        "message_ids": [],
+                        "dest_mailbox": "Archive",
+                    }
+                ]
+            )
+        )
 
         args = mock_args(json=False, force=False)
         with pytest.raises(SystemExit):
@@ -669,12 +745,18 @@ class TestCmdUndoEdgeCases:
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
-        test_log.write_text(json.dumps([{
-            "timestamp": datetime.now().isoformat(),
-            "operation": "batch-unknown",
-            "account": "iCloud",
-            "message_ids": [1, 2],
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "operation": "batch-unknown",
+                        "account": "iCloud",
+                        "message_ids": [1, 2],
+                    }
+                ]
+            )
+        )
 
         args = mock_args(json=False, force=False)
         with pytest.raises(SystemExit):
@@ -711,13 +793,19 @@ class TestCmdUndoEdgeCases:
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
-        test_log.write_text(json.dumps([{
-            "timestamp": datetime.now().isoformat(),
-            "operation": "batch-move",
-            "account": "iCloud",
-            "message_ids": [1],
-            "dest_mailbox": None,
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "operation": "batch-move",
+                        "account": "iCloud",
+                        "message_ids": [1],
+                        "dest_mailbox": None,
+                    }
+                ]
+            )
+        )
 
         args = mock_args(json=False, force=False)
         with pytest.raises(SystemExit):
@@ -753,13 +841,19 @@ class TestCmdUndoEdgeCases:
         test_log = tmp_path / "mail-undo.json"
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
-        test_log.write_text(json.dumps([{
-            "timestamp": datetime.now().isoformat(),
-            "operation": "batch-delete",
-            "account": "iCloud",
-            "message_ids": [301],
-            "source_mailbox": None,
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "operation": "batch-delete",
+                        "account": "iCloud",
+                        "message_ids": [301],
+                        "source_mailbox": None,
+                    }
+                ]
+            )
+        )
 
         mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
@@ -806,14 +900,20 @@ class TestCmdUndoEdgeCases:
         monkeypatch.setattr(undo_module, "UNDO_LOG_FILE", str(test_log))
 
         stale_ts = (datetime.now() - timedelta(minutes=60)).isoformat()
-        test_log.write_text(json.dumps([{
-            "timestamp": stale_ts,
-            "operation": "batch-move",
-            "account": "iCloud",
-            "message_ids": [501],
-            "dest_mailbox": "Archive",
-            "sender": "old@x.com",
-        }]))
+        test_log.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": stale_ts,
+                        "operation": "batch-move",
+                        "account": "iCloud",
+                        "message_ids": [501],
+                        "dest_mailbox": "Archive",
+                        "sender": "old@x.com",
+                    }
+                ]
+            )
+        )
 
         mock_run = patch("mxctl.commands.mail.undo.run")
         with mock_run as mocked:
@@ -854,10 +954,7 @@ class TestStatsAllAccountsFix:
     @patch("mxctl.commands.mail.analytics.run")
     def test_stats_all_with_explicit_account_uses_single_account_script(self, mock_run, mock_args, capsys):
         """stats --all -a ACCOUNT must use the single-account AppleScript branch."""
-        mock_run.return_value = (
-            f"100{FIELD_SEPARATOR}10\n"
-            f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}100{FIELD_SEPARATOR}10\n"
-        )
+        mock_run.return_value = f"100{FIELD_SEPARATOR}10\niCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}100{FIELD_SEPARATOR}10\n"
         args = mock_args(account="iCloud", all=True, json=False, mailbox=None)
 
         cmd_stats(args)
@@ -869,3 +966,37 @@ class TestStatsAllAccountsFix:
 
         captured = capsys.readouterr()
         assert "Account: iCloud" in captured.out
+
+    @patch("mxctl.commands.mail.analytics.run")
+    def test_stats_all_json_scope_is_all_without_explicit_account(self, mock_run, mock_args, capsys):
+        """stats --all --json without -a must report scope: 'all', not the default account."""
+        mock_run.return_value = (
+            f"200{FIELD_SEPARATOR}15\n"
+            f"iCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}100{FIELD_SEPARATOR}10\n"
+            f"Gmail{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}100{FIELD_SEPARATOR}5\n"
+        )
+        args = mock_args(account=None, all=True, json=True, mailbox=None)
+
+        cmd_stats(args)
+
+        captured = capsys.readouterr()
+        import json
+
+        out = captured.out
+        data = json.loads(out[out.find("{") : out.rfind("}") + 1])
+        assert data["scope"] == "all"
+
+    @patch("mxctl.commands.mail.analytics.run")
+    def test_stats_all_json_scope_is_account_with_explicit_flag(self, mock_run, mock_args, capsys):
+        """stats --all --json -a iCloud must report scope: 'iCloud'."""
+        mock_run.return_value = f"100{FIELD_SEPARATOR}10\niCloud{FIELD_SEPARATOR}INBOX{FIELD_SEPARATOR}100{FIELD_SEPARATOR}10\n"
+        args = mock_args(account="iCloud", all=True, json=True, mailbox=None)
+
+        cmd_stats(args)
+
+        captured = capsys.readouterr()
+        import json
+
+        out = captured.out
+        data = json.loads(out[out.find("{") : out.rfind("}") + 1])
+        assert data["scope"] == "iCloud"
