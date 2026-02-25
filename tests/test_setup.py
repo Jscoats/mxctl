@@ -1474,6 +1474,29 @@ def test_ai_setup_keyboard_interrupt_at_selection(monkeypatch, mock_args, capsys
     assert "cancelled" in captured.out.lower()
 
 
+def test_ai_setup_print_flag(mock_args, capsys):
+    """--print dumps the raw snippet to stdout with no wizard or prompts."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    cmd_ai_setup(mock_args(print_snippet=True))
+
+    captured = capsys.readouterr()
+    assert _SNIPPET_MARKER in captured.out
+    assert "mxctl inbox" in captured.out
+    # No wizard chrome (header, prompts) should appear
+    assert "AI Assistant Setup" not in captured.out
+
+
+def test_ai_setup_print_no_leading_newline(mock_args, capsys):
+    """--print output starts with the heading, not a blank line (clean for piping)."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    cmd_ai_setup(mock_args(print_snippet=True))
+
+    captured = capsys.readouterr()
+    assert captured.out.startswith("## mxctl")
+
+
 def test_register_includes_ai_setup():
     """register() adds both 'init' and 'ai-setup' subcommands."""
     import argparse
@@ -1487,3 +1510,17 @@ def test_register_includes_ai_setup():
     args = parser.parse_args(["ai-setup", "--json"])
     assert args.json is True
     assert hasattr(args, "func")
+
+
+def test_register_ai_setup_print_flag():
+    """register() wires --print flag as print_snippet dest."""
+    import argparse
+
+    from mxctl.commands.mail.setup import register
+
+    parser = argparse.ArgumentParser()
+    subs = parser.add_subparsers(dest="command")
+    register(subs)
+
+    args = parser.parse_args(["ai-setup", "--print"])
+    assert args.print_snippet is True

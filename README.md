@@ -350,6 +350,26 @@ Add `--json` to any command for structured output. Run `mxctl --help` for all 50
 Default account is set in `~/.config/mxctl/config.json`. Use `-a "Account Name"` to switch accounts.
 ````
 
+#### Local AI (Ollama, LM Studio, Aider, etc.)
+
+For local models, use `--print` to dump the raw snippet and pipe it wherever you need:
+
+```bash
+# Copy to clipboard
+mxctl ai-setup --print | pbcopy
+
+# Append to an Ollama Modelfile
+mxctl ai-setup --print >> ~/Modelfile
+
+# Save as a reusable system prompt file
+mxctl ai-setup --print > ~/.config/mxctl-prompt.md
+
+# Pass to Aider
+mxctl ai-setup --print > .aider.prompt.md
+```
+
+`--print` outputs clean markdown with no interactive prompts — it's designed for piping.
+
 #### Ad-hoc: inject the full command list on demand
 
 For a one-off session with any AI tool, paste the full command reference directly into the chat:

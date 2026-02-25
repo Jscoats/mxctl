@@ -207,6 +207,11 @@ _AI_TOOL_TARGETS: dict[str, tuple[str, str]] = {
 
 def cmd_ai_setup(args) -> None:
     """Configure an AI assistant to use mxctl."""
+    # --print: dump raw snippet to stdout and exit (no wizard, pipeable)
+    if getattr(args, "print_snippet", False):
+        sys.stdout.write(_MXCTL_AI_SNIPPET.lstrip("\n"))
+        return
+
     print(f"\n  {_B}mxctl AI Assistant Setup{_R}")
     print(f"  {_D}Add mxctl to your AI assistant's context so it knows your commands.{_R}\n")
 
@@ -497,4 +502,10 @@ def register(subparsers) -> None:
 
     p2 = subparsers.add_parser("ai-setup", help="Configure your AI assistant to use mxctl")
     p2.add_argument("--json", action="store_true", help="Output as JSON")
+    p2.add_argument(
+        "--print",
+        action="store_true",
+        dest="print_snippet",
+        help="Print the raw snippet to stdout and exit (for piping into Modelfiles, system prompts, etc.)",
+    )
     p2.set_defaults(func=cmd_ai_setup)
