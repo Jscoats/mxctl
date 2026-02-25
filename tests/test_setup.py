@@ -1497,6 +1497,106 @@ def test_ai_setup_print_no_leading_newline(mock_args, capsys):
     assert captured.out.startswith("## mxctl")
 
 
+def test_ai_setup_interactive_radio_select(monkeypatch, mock_args, capsys, tmp_path):
+    """Interactive mode: _radio_select picks Claude Code, file is written."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    monkeypatch.setattr("mxctl.commands.mail.setup._is_interactive", lambda: True)
+    monkeypatch.setattr("mxctl.commands.mail.setup._radio_select", lambda prompt, opts: 0)  # Claude Code
+
+    # Confirm write
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+
+    cmd_ai_setup(mock_args())
+
+    assert os.path.isfile(target)
+    with open(target) as f:
+        assert _SNIPPET_MARKER in f.read()
+
+
+def test_ai_setup_interactive_keyboard_interrupt(monkeypatch, mock_args, capsys, tmp_path):
+    """Interactive mode: KeyboardInterrupt in _radio_select cancels cleanly."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    _patch_ai_targets(monkeypatch, tmp_path)
+
+    monkeypatch.setattr("mxctl.commands.mail.setup._is_interactive", lambda: True)
+
+    def raise_interrupt(prompt, opts):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("mxctl.commands.mail.setup._radio_select", raise_interrupt)
+
+    cmd_ai_setup(mock_args())
+
+    captured = capsys.readouterr()
+    assert "cancelled" in captured.out.lower()
+
+
+def test_ai_setup_invalid_then_valid_input(monkeypatch, mock_args, capsys, tmp_path):
+    """Invalid selection number triggers retry, then valid input proceeds."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    _patch_ai_targets(monkeypatch, tmp_path)
+
+    # "99" is invalid, then "5" selects Skip
+    inputs = iter(["99", "5"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    captured = capsys.readouterr()
+    assert "Please enter a number" in captured.out
+    assert "Skipped" in captured.out
+
+
+def test_ai_setup_already_configured_json(monkeypatch, mock_args, capsys, tmp_path):
+    """Already-configured path with --json emits JSON status."""
+    from mxctl.commands.mail.setup import _MXCTL_AI_SNIPPET, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    with open(target, "w") as f:
+        f.write(_MXCTL_AI_SNIPPET)
+
+    inputs = iter(["1"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args(json=True))
+
+    captured = capsys.readouterr()
+    assert "already_configured" in captured.out
+
+
+def test_ai_setup_confirm_interrupt(monkeypatch, mock_args, capsys, tmp_path):
+    """KeyboardInterrupt at the confirm prompt cancels without writing."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    call_count = 0
+
+    def input_then_interrupt(prompt):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return "1"  # select Claude Code
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("builtins.input", input_then_interrupt)
+
+    cmd_ai_setup(mock_args())
+
+    assert not os.path.isfile(target)
+    captured = capsys.readouterr()
+    assert "Cancelled" in captured.out
+
+
 def test_register_includes_ai_setup():
     """register() adds both 'init' and 'ai-setup' subcommands."""
     import argparse
