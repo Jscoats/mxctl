@@ -33,7 +33,7 @@ src/mxctl/
         ├── manage.py                  # create-mailbox, delete-mailbox, empty-trash
         ├── batch.py                   # batch-read, batch-flag, batch-move, batch-delete
         ├── analytics.py               # stats, top-senders, digest, show-flagged
-        ├── setup.py                   # init (first-time setup wizard)
+        ├── setup.py                   # init, ai-setup (setup wizards)
         ├── system.py                  # check, headers, rules, junk, not-junk
         ├── composite.py               # export, thread, reply, forward
         ├── ai.py                      # summary, triage, context, find-related
@@ -87,4 +87,4 @@ Batch commands (`batch-read`, `batch-move`, `batch-delete`, `batch-flag`) log th
 
 Tests live in `tests/` and use `unittest.mock` to mock AppleScript calls. No actual Mail.app interaction happens during testing. Run with `pytest --cov` for coverage.
 
-The suite has 655 tests (100% coverage) across 20 test files covering command parsing, AppleScript output parsing, error paths, date handling, formatting, config resolution, batch operations, undo logging, templates, AI classification logic, unsubscribe HTTP paths, Todoist integration, inbox tools, and bulk export. Six unreachable defensive guards are marked with `# pragma: no cover`.
+The suite has 665 tests (100% coverage) across 19 test files covering command parsing, AppleScript output parsing, error paths, date handling, formatting, config resolution, batch operations, undo logging, templates, AI classification logic, unsubscribe HTTP paths, Todoist integration, inbox tools, and bulk export. Six unreachable defensive guards are marked with `# pragma: no cover`.

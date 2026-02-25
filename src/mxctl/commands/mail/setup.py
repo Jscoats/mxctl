@@ -1,4 +1,4 @@
-"""Setup wizard for first-time configuration: init."""
+"""Setup wizard for first-time configuration: init, ai-setup."""
 
 import os
 import re
@@ -18,12 +18,12 @@ from mxctl.util.applescript import run
 from mxctl.util.formatting import format_output
 
 # ANSI helpers
-_G = "\x1b[1;32m"   # bold green
-_C = "\x1b[1;36m"   # bold cyan
-_D = "\x1b[90m"     # dim gray
-_B = "\x1b[1m"      # bold
-_R = "\x1b[0m"      # reset
-_W = "\x1b[1;37m"   # bold white
+_G = "\x1b[1;32m"  # bold green
+_C = "\x1b[1;36m"  # bold cyan
+_D = "\x1b[90m"  # dim gray
+_B = "\x1b[1m"  # bold
+_R = "\x1b[0m"  # reset
+_W = "\x1b[1;37m"  # bold white
 
 _BANNER = f"""{_C}
                     _   _
@@ -39,11 +39,11 @@ _BANNER = f"""{_C}
 
 # Styled key hints for the hint bar
 _K_ARROWS = f"{_D}↑/↓{_R}"
-_K_SPACE  = f"{_G}[Space]{_R}"
-_K_ENTER  = f"{_W}[Enter]{_R}"
+_K_SPACE = f"{_G}[Space]{_R}"
+_K_ENTER = f"{_W}[Enter]{_R}"
 _K_CANCEL = f"{_D}Ctrl+C cancel{_R}"
 
-_HINT_RADIO    = f"  {_K_ARROWS} navigate   {_K_SPACE} select   {_K_ENTER} confirm   {_K_CANCEL}"
+_HINT_RADIO = f"  {_K_ARROWS} navigate   {_K_SPACE} select   {_K_ENTER} confirm   {_K_CANCEL}"
 _HINT_CHECKBOX = f"  {_K_ARROWS} navigate   {_K_SPACE} toggle   {_K_ENTER} confirm   {_K_CANCEL}"
 
 
@@ -164,6 +164,139 @@ def _step_header(step: int, total: int, title: str, hint: str) -> None:
     print(f"  {_D}{hint}{_R}\n")
 
 
+# ---------------------------------------------------------------------------
+# AI assistant setup
+# ---------------------------------------------------------------------------
+
+_SNIPPET_MARKER = "## mxctl — Apple Mail CLI"
+
+_MXCTL_AI_SNIPPET = """\
+
+## mxctl — Apple Mail CLI
+
+`mxctl` manages Apple Mail from the terminal. Use it to read, triage, and act on email without opening Mail.app.
+
+Key commands:
+- `mxctl inbox` — unread counts across all accounts
+- `mxctl triage` — categorize unread mail by urgency
+- `mxctl summary` — concise one-liner per unread message
+- `mxctl list [-a ACCOUNT] [--unread] [--limit N]` — list messages
+- `mxctl read ID [-a ACCOUNT] [-m MAILBOX]` — read a message
+- `mxctl search QUERY [--sender]` — search messages
+- `mxctl mark-read ID` / `mxctl flag ID` — message actions
+- `mxctl batch-move --from-sender ADDR --to-mailbox MAILBOX` — bulk move
+- `mxctl batch-delete --older-than DAYS -m MAILBOX` — bulk delete
+- `mxctl undo` — roll back the last batch operation
+- `mxctl to-todoist ID --project NAME` — turn an email into a task
+
+Add `--json` to any command for structured output. Run `mxctl --help` for all 50 commands.
+Default account is set in `~/.config/mxctl/config.json`. Use `-a "Account Name"` to switch accounts.
+"""
+
+_AI_TOOL_NAMES = ["Claude Code", "Cursor", "Windsurf", "Other (copy-paste)", "Skip"]
+
+# (path_template, scope)
+# scope "global"  → expand ~ and write to user home area
+# scope "project" → join with os.getcwd() and write to current directory
+_AI_TOOL_TARGETS: dict[str, tuple[str, str]] = {
+    "Claude Code": ("~/.claude/CLAUDE.md", "global"),
+    "Cursor": (".cursorrules", "project"),
+    "Windsurf": (".windsurfrules", "project"),
+}
+
+
+def cmd_ai_setup(args) -> None:
+    """Configure an AI assistant to use mxctl."""
+    print(f"\n  {_B}mxctl AI Assistant Setup{_R}")
+    print(f"  {_D}Add mxctl to your AI assistant's context so it knows your commands.{_R}\n")
+
+    # --- Select tool ---
+    if _is_interactive():
+        try:
+            idx = _radio_select("  Which AI assistant do you use?", _AI_TOOL_NAMES)
+        except KeyboardInterrupt:
+            print(f"\n  {_D}Setup cancelled.{_R}")
+            return
+        tool = _AI_TOOL_NAMES[idx]
+    else:
+        print("  AI assistants:")
+        for i, name in enumerate(_AI_TOOL_NAMES, start=1):
+            print(f"    {i}. {name}")
+        while True:
+            try:
+                raw = input(f"\n  Select [1-{len(_AI_TOOL_NAMES)}]: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print(f"\n  {_D}Setup cancelled.{_R}")
+                return
+            if raw.isdigit() and 1 <= int(raw) <= len(_AI_TOOL_NAMES):
+                tool = _AI_TOOL_NAMES[int(raw) - 1]
+                break
+            print(f"  Please enter a number between 1 and {len(_AI_TOOL_NAMES)}.")
+
+    if tool == "Skip":
+        print(f"  {_D}Skipped.{_R}")
+        return
+
+    if tool == "Other (copy-paste)":
+        print(f"\n  {_B}Copy this into your AI assistant's context or rules file:{_R}\n")
+        print(_MXCTL_AI_SNIPPET)
+        return
+
+    # --- Resolve target path ---
+    path_template, scope = _AI_TOOL_TARGETS[tool]
+    if scope == "global":
+        target = os.path.expanduser(path_template)
+    else:
+        target = os.path.join(os.getcwd(), path_template)
+
+    print(f"  {_D}Target: {target}{_R}")
+
+    # --- Already configured? ---
+    if os.path.isfile(target):
+        with open(target) as f:
+            existing = f.read()
+        if _SNIPPET_MARKER in existing:
+            print(f"  {_G}✓{_R} mxctl is already configured in {os.path.basename(target)}.")
+            if getattr(args, "json", False):
+                format_output(args, "", json_data={"status": "already_configured", "file": target})
+            return
+
+    # --- Preview ---
+    print(f"\n  {_B}The following will be appended to {os.path.basename(target)}:{_R}\n")
+    for line in _MXCTL_AI_SNIPPET.strip().splitlines():
+        print(f"  {_D}{line}{_R}")
+    print()
+
+    # --- Confirm ---
+    try:
+        answer = input(f"  Write to {os.path.basename(target)}? [{_B}Y{_R}/{_B}n{_R}]: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n  {_D}Cancelled.{_R}")
+        return
+
+    if answer == "n":
+        print(f"  {_D}Cancelled.{_R}")
+        return
+
+    # --- Write ---
+    dir_path = os.path.dirname(target)
+    if dir_path:
+        os.makedirs(dir_path, exist_ok=True)
+    with open(target, "a") as f:
+        f.write(_MXCTL_AI_SNIPPET)
+
+    scope_note = (
+        "This applies globally to all Claude Code sessions."
+        if scope == "global"
+        else f"This applies to the current project ({os.getcwd()})."
+    )
+    print(f"\n  {_G}Done!{_R} mxctl added to {target}")
+    print(f"  {_D}{scope_note}{_R}")
+
+    if getattr(args, "json", False):
+        format_output(args, "", json_data={"status": "written", "file": target})
+
+
 def cmd_init(args) -> None:
     """Interactive setup wizard to configure mxctl."""
     print(_BANNER)
@@ -213,11 +346,13 @@ end tell
         parts = line.split(FIELD_SEPARATOR)
         if len(parts) >= 3:
             name, email, enabled_str = parts[0], parts[1], parts[2]
-            accounts.append({
-                "name": name,
-                "email": email,
-                "enabled": enabled_str.strip().lower() == "true",
-            })
+            accounts.append(
+                {
+                    "name": name,
+                    "email": email,
+                    "enabled": enabled_str.strip().lower() == "true",
+                }
+            )
 
     enabled_accounts = [a for a in accounts if a["enabled"]]
 
@@ -228,8 +363,7 @@ end tell
     total_steps = 3
 
     # --- Step 1: Select primary account ---
-    _step_header(1, total_steps, "Default Account",
-                 "Which account should commands use when you don't specify -a?")
+    _step_header(1, total_steps, "Default Account", "Which account should commands use when you don't specify -a?")
 
     if len(enabled_accounts) == 1:
         chosen = enabled_accounts[0]
@@ -261,8 +395,7 @@ end tell
             print(f"  Please enter a number between 1 and {len(enabled_accounts)}.")
 
     # --- Step 2: Select Gmail accounts ---
-    _step_header(2, total_steps, "Gmail Accounts",
-                 "Gmail uses different mailbox names ([Gmail]/Spam instead of Junk).")
+    _step_header(2, total_steps, "Gmail Accounts", "Gmail uses different mailbox names ([Gmail]/Spam instead of Junk).")
 
     gmail_accounts: list[str] = []
     if len(enabled_accounts) == 1:
@@ -299,8 +432,7 @@ end tell
         print(f"  {_D}Mailbox names will auto-translate for: {', '.join(gmail_accounts)}{_R}")
 
     # --- Step 3: Todoist API token ---
-    _step_header(3, total_steps, "Todoist Integration",
-                 "Turn emails into tasks with `mxctl to-todoist`.")
+    _step_header(3, total_steps, "Todoist Integration", "Turn emails into tasks with `mxctl to-todoist`.")
     print(f"  {_D}Get your token: Todoist Settings > Integrations > Developer{_R}")
 
     todoist_token = ""
@@ -312,7 +444,7 @@ end tell
     except EOFError:
         raw_token = ""
     if raw_token:
-        if not re.match(r'^[a-f0-9]{40}$', raw_token):
+        if not re.match(r"^[a-f0-9]{40}$", raw_token):
             print(f"  {_D}Warning: Doesn't match expected format (40 hex chars). Saving anyway.{_R}")
         todoist_token = raw_token
 
@@ -344,7 +476,9 @@ end tell
         f"    {_G}mxctl inbox{_R}       {_D}Unread counts across all accounts{_R}\n"
         f"    {_G}mxctl summary{_R}     {_D}AI-concise one-liner per unread{_R}\n"
         f"    {_G}mxctl triage{_R}      {_D}Unread grouped by urgency{_R}\n"
-        f"    {_G}mxctl --help{_R}      {_D}See all 49 commands{_R}\n"
+        f"    {_G}mxctl --help{_R}      {_D}See all 50 commands{_R}\n"
+        f"\n  {_B}Using an AI assistant?{_R}\n"
+        f"    {_G}mxctl ai-setup{_R}    {_D}Point Claude Code, Cursor, or Windsurf at mxctl{_R}\n"
     )
 
     if getattr(args, "json", False):
@@ -360,3 +494,7 @@ def register(subparsers) -> None:
     p = subparsers.add_parser("init", help="Setup wizard for first-time configuration")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_init)
+
+    p2 = subparsers.add_parser("ai-setup", help="Configure your AI assistant to use mxctl")
+    p2.add_argument("--json", action="store_true", help="Output as JSON")
+    p2.set_defaults(func=cmd_ai_setup)

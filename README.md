@@ -12,7 +12,7 @@
 
 > Apple Mail from your terminal.
 
-**49 commands.** Triage with AI, batch-process newsletters, turn emails into Todoist tasks — all from the terminal. Every command supports `--json` for scripting and AI workflows. Zero external dependencies.
+**50 commands.** Triage with AI, batch-process newsletters, turn emails into Todoist tasks — all from the terminal. Every command supports `--json` for scripting and AI workflows. Zero external dependencies.
 
 <p align="center">
   <img src="demo/demo.gif" alt="mxctl demo — inbox, triage, summary, and batch operations" width="700">
@@ -35,7 +35,7 @@
 
 ## Key Features
 
-- **49 Commands** - Everything from basic operations to advanced batch processing
+- **50 Commands** - Everything from basic operations to advanced batch processing
 - **Any Account, One Interface** - iCloud, Gmail, Outlook, Exchange, IMAP -- whatever Mail.app has, this works with
 - **Gmail Mailbox Translation** - Automatically maps standard names (`Trash`, `Spam`, `Sent`) to Gmail's `[Gmail]/...` paths
 - **Built for AI Workflows** - Every command supports `--json` output designed for AI assistants to read and act on
@@ -142,6 +142,7 @@ Triage -- 15 Unread Messages
 
 ### Setup
 - `init` - First-time setup wizard (auto-detects Mail accounts, configures default account and optional Todoist token)
+- `ai-setup` - Configure your AI assistant (Claude Code, Cursor, Windsurf) to use mxctl
 
 ### Account & Mailbox Management
 - `inbox` - Overview of all accounts with unread counts
@@ -313,6 +314,52 @@ mxctl draft --to client@company.com --template "meeting-followup"
 
 Every command supports `--json`, making your inbox data available to any AI assistant. Commands like `summary`, `triage`, and `context` are specifically designed to give AI a structured understanding of your inbox in seconds.
 
+### Pointing Your AI Assistant to mxctl
+
+For an AI assistant to use mxctl effectively, it needs to know the tool is available. The fastest way is the built-in setup command:
+
+```bash
+mxctl ai-setup
+```
+
+It walks you through selecting your AI assistant (Claude Code, Cursor, or Windsurf), previews the snippet it will write, and asks for confirmation before touching any file. Run it once; skip it any time you don't need it.
+
+#### Manual setup
+
+If you prefer to set things up yourself, add this block to your assistant's context file (`~/.claude/CLAUDE.md` for Claude Code, `.cursorrules` for Cursor, `.windsurfrules` for Windsurf):
+
+````markdown
+## mxctl — Apple Mail CLI
+
+`mxctl` manages Apple Mail from the terminal. Use it to read, triage, and act on email without opening Mail.app.
+
+Key commands:
+- `mxctl inbox` — unread counts across all accounts
+- `mxctl triage` — categorize unread mail by urgency
+- `mxctl summary` — concise one-liner per unread message
+- `mxctl list [-a ACCOUNT] [--unread] [--limit N]` — list messages
+- `mxctl read ID [-a ACCOUNT] [-m MAILBOX]` — read a message
+- `mxctl search QUERY [--sender]` — search messages
+- `mxctl mark-read ID` / `mxctl flag ID` — message actions
+- `mxctl batch-move --from-sender ADDR --to-mailbox MAILBOX` — bulk move
+- `mxctl batch-delete --older-than DAYS -m MAILBOX` — bulk delete
+- `mxctl undo` — roll back the last batch operation
+- `mxctl to-todoist ID --project NAME` — turn an email into a task
+
+Add `--json` to any command for structured output. Run `mxctl --help` for all 50 commands.
+Default account is set in `~/.config/mxctl/config.json`. Use `-a "Account Name"` to switch accounts.
+````
+
+#### Ad-hoc: inject the full command list on demand
+
+For a one-off session with any AI tool, paste the full command reference directly into the chat:
+
+```bash
+mxctl --help
+```
+
+The output is concise enough to fit in any context window and gives the AI everything it needs to pick the right command.
+
 ### With Claude Code
 ```bash
 # Just ask Claude to check your mail
@@ -372,7 +419,7 @@ The AI analyzes which newsletters you actually read vs. ignore, then unsubscribe
 
 Built with modern Python patterns:
 - **Zero runtime dependencies** (stdlib only)
-- **Comprehensive test suite** (422 tests)
+- **Comprehensive test suite** (665 tests)
 - **Modular command structure** (16 focused modules)
 - **AppleScript bridge** for Mail.app communication
 - **Three-tier account resolution** (explicit flag -> config default -> last-used)
@@ -392,7 +439,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
 | **Setup** | `pip install mxctl && mxctl init` | Extensive config | OAuth flows + API keys | Write your own scripts |
 | **Dependencies** | Zero (stdlib only) | Varies | SDK + auth libraries | None |
 
-**In short:** mutt replaces Mail.app (you lose macOS integration). Provider APIs lock you into one service. Raw AppleScript works but you're building everything from scratch. mxctl gives you 49 structured commands on top of the Mail.app you already use.
+**In short:** mutt replaces Mail.app (you lose macOS integration). Provider APIs lock you into one service. Raw AppleScript works but you're building everything from scratch. mxctl gives you 50 structured commands on top of the Mail.app you already use.
 
 ## Contributing
 

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `ai-setup` command — interactive wizard to configure Claude Code, Cursor, or Windsurf to use mxctl; detects existing config files, previews the snippet before writing, supports `--json`
+- "Pointing Your AI Assistant to mxctl" section in README — `mxctl ai-setup` walkthrough plus manual copy-paste snippet for all major AI tools
+
 ## [0.3.0] - 2026-02-24
 
 ### Changed

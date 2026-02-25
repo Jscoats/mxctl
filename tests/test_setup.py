@@ -10,6 +10,7 @@ from mxctl.config import FIELD_SEPARATOR
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_account_line(name, email, enabled=True):
     enabled_str = "true" if enabled else "false"
     return f"{name}{FIELD_SEPARATOR}{email}{FIELD_SEPARATOR}{enabled_str}"
@@ -18,6 +19,7 @@ def _make_account_line(name, email, enabled=True):
 # ---------------------------------------------------------------------------
 # test_init_no_accounts
 # ---------------------------------------------------------------------------
+
 
 def test_init_no_accounts(monkeypatch, mock_args, capsys, tmp_path):
     """When run() returns empty, print an error and return early."""
@@ -42,6 +44,7 @@ def test_init_no_accounts(monkeypatch, mock_args, capsys, tmp_path):
 # ---------------------------------------------------------------------------
 # test_init_single_account_autoselect
 # ---------------------------------------------------------------------------
+
 
 def test_init_single_account_autoselect(monkeypatch, mock_args, capsys, tmp_path):
     """One enabled account: auto-select it and write config."""
@@ -77,6 +80,7 @@ def test_init_single_account_autoselect(monkeypatch, mock_args, capsys, tmp_path
 # test_init_multiple_accounts
 # ---------------------------------------------------------------------------
 
+
 def test_init_multiple_accounts(monkeypatch, mock_args, capsys, tmp_path):
     """Multiple accounts: user picks one by number, config is written."""
     from mxctl.commands.mail.setup import cmd_init
@@ -86,10 +90,15 @@ def test_init_multiple_accounts(monkeypatch, mock_args, capsys, tmp_path):
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -111,6 +120,7 @@ def test_init_multiple_accounts(monkeypatch, mock_args, capsys, tmp_path):
 # ---------------------------------------------------------------------------
 # test_init_existing_config
 # ---------------------------------------------------------------------------
+
 
 def test_init_existing_config(monkeypatch, mock_args, capsys, tmp_path):
     """Existing config: user says 'y' to reconfigure, wizard runs."""
@@ -152,6 +162,7 @@ def test_init_existing_config(monkeypatch, mock_args, capsys, tmp_path):
 # test_init_json_output
 # ---------------------------------------------------------------------------
 
+
 def test_init_json_output(monkeypatch, mock_args, capsys, tmp_path):
     """--json flag outputs the written config as JSON."""
     from mxctl.commands.mail.setup import cmd_init
@@ -179,6 +190,7 @@ def test_init_json_output(monkeypatch, mock_args, capsys, tmp_path):
 # test_init_gmail_accounts_saved
 # ---------------------------------------------------------------------------
 
+
 def test_init_gmail_accounts_saved(monkeypatch, mock_args, capsys, tmp_path):
     """Gmail accounts selected during init are saved to config."""
     from mxctl.commands.mail.setup import cmd_init
@@ -188,10 +200,15 @@ def test_init_gmail_accounts_saved(monkeypatch, mock_args, capsys, tmp_path):
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("ASU Gmail", "me@asu.edu", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("ASU Gmail", "me@asu.edu", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -211,6 +228,7 @@ def test_init_gmail_accounts_saved(monkeypatch, mock_args, capsys, tmp_path):
 # ---------------------------------------------------------------------------
 # test_resolve_mailbox
 # ---------------------------------------------------------------------------
+
 
 def test_resolve_mailbox_gmail_translation(monkeypatch):
     """resolve_mailbox translates friendly names for Gmail accounts."""
@@ -248,6 +266,7 @@ def test_resolve_mailbox_non_gmail_passthrough(monkeypatch):
 # test_init_creates_config_dir
 # ---------------------------------------------------------------------------
 
+
 def test_init_creates_config_dir(monkeypatch, mock_args, capsys, tmp_path):
     """Config directory is created if it doesn't exist."""
     from mxctl.commands.mail.setup import cmd_init
@@ -279,6 +298,7 @@ def test_init_creates_config_dir(monkeypatch, mock_args, capsys, tmp_path):
 # _is_interactive()
 # ---------------------------------------------------------------------------
 
+
 def test_is_interactive_ci_env(monkeypatch):
     """CI env var forces _is_interactive() to return False."""
     from mxctl.commands.mail.setup import _is_interactive
@@ -300,6 +320,7 @@ def test_is_interactive_non_interactive_env(monkeypatch):
 # ---------------------------------------------------------------------------
 # Existing config: user declines reconfigure
 # ---------------------------------------------------------------------------
+
 
 def test_init_existing_config_decline(monkeypatch, mock_args, capsys, tmp_path):
     """Existing config, user says 'n' — keeps config and returns."""
@@ -415,6 +436,7 @@ def test_init_existing_config_eof(monkeypatch, mock_args, capsys, tmp_path):
 # No enabled accounts found
 # ---------------------------------------------------------------------------
 
+
 def test_init_no_enabled_accounts(monkeypatch, mock_args, capsys, tmp_path):
     """All accounts disabled — prints error."""
     from mxctl.commands.mail.setup import cmd_init
@@ -438,6 +460,7 @@ def test_init_no_enabled_accounts(monkeypatch, mock_args, capsys, tmp_path):
 # ---------------------------------------------------------------------------
 # Blank lines / empty parse lines skipped
 # ---------------------------------------------------------------------------
+
 
 def test_init_blank_lines_skipped(monkeypatch, mock_args, capsys, tmp_path):
     """Blank lines in AppleScript output are skipped during parsing."""
@@ -470,6 +493,7 @@ def test_init_blank_lines_skipped(monkeypatch, mock_args, capsys, tmp_path):
 # Multi-account: non-interactive fallback paths
 # ---------------------------------------------------------------------------
 
+
 def test_init_multi_account_invalid_then_valid(monkeypatch, mock_args, capsys, tmp_path):
     """Invalid selection number, then valid — exercises the retry loop."""
     from mxctl.commands.mail.setup import cmd_init
@@ -479,10 +503,15 @@ def test_init_multi_account_invalid_then_valid(monkeypatch, mock_args, capsys, t
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -510,10 +539,15 @@ def test_init_multi_account_keyboard_interrupt(monkeypatch, mock_args, capsys, t
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -538,10 +572,15 @@ def test_init_multi_account_eof_defaults_to_1(monkeypatch, mock_args, capsys, tm
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -568,6 +607,7 @@ def test_init_multi_account_eof_defaults_to_1(monkeypatch, mock_args, capsys, tm
 # ---------------------------------------------------------------------------
 # Gmail step: single account says 'y'
 # ---------------------------------------------------------------------------
+
 
 def test_init_single_account_gmail_yes(monkeypatch, mock_args, capsys, tmp_path):
     """Single account, user says 'y' to Gmail prompt."""
@@ -630,6 +670,7 @@ def test_init_single_account_gmail_interrupt(monkeypatch, mock_args, capsys, tmp
 # Gmail step: multi-account non-interactive fallback
 # ---------------------------------------------------------------------------
 
+
 def test_init_multi_account_gmail_selection(monkeypatch, mock_args, capsys, tmp_path):
     """Multi-account, non-interactive: user enters gmail account numbers."""
     from mxctl.commands.mail.setup import cmd_init
@@ -639,10 +680,15 @@ def test_init_multi_account_gmail_selection(monkeypatch, mock_args, capsys, tmp_
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -667,10 +713,15 @@ def test_init_multi_account_gmail_interrupt(monkeypatch, mock_args, capsys, tmp_
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -698,6 +749,7 @@ def test_init_multi_account_gmail_interrupt(monkeypatch, mock_args, capsys, tmp_
 # ---------------------------------------------------------------------------
 # Todoist token: valid format, invalid format, interrupt, eof
 # ---------------------------------------------------------------------------
+
 
 def test_init_todoist_valid_token(monkeypatch, mock_args, capsys, tmp_path):
     """Valid 40-hex-char Todoist token is saved without warning."""
@@ -826,6 +878,7 @@ def test_init_todoist_eof(monkeypatch, mock_args, capsys, tmp_path):
 # JSON output with Todoist token is redacted
 # ---------------------------------------------------------------------------
 
+
 def test_init_json_todoist_redacted(monkeypatch, mock_args, capsys, tmp_path):
     """--json output redacts the Todoist token."""
     from mxctl.commands.mail.setup import cmd_init
@@ -856,6 +909,7 @@ def test_init_json_todoist_redacted(monkeypatch, mock_args, capsys, tmp_path):
 # Summary parts: Gmail count plural
 # ---------------------------------------------------------------------------
 
+
 def test_init_summary_gmail_plural(monkeypatch, mock_args, capsys, tmp_path):
     """Gmail count in summary pluralizes correctly."""
     from mxctl.commands.mail.setup import cmd_init
@@ -865,11 +919,16 @@ def test_init_summary_gmail_plural(monkeypatch, mock_args, capsys, tmp_path):
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail1", "a@gmail.com", enabled=True),
-        _make_account_line("Gmail2", "b@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail1", "a@gmail.com", enabled=True),
+                _make_account_line("Gmail2", "b@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -892,6 +951,7 @@ def test_init_summary_gmail_plural(monkeypatch, mock_args, capsys, tmp_path):
 # Interactive paths: _is_interactive() True, mock _radio_select/_checkbox_select
 # ---------------------------------------------------------------------------
 
+
 def test_init_interactive_multi_account_radio(monkeypatch, mock_args, capsys, tmp_path):
     """Interactive mode: _radio_select picks account, _checkbox_select picks Gmail."""
     from mxctl.commands.mail.setup import cmd_init
@@ -901,10 +961,15 @@ def test_init_interactive_multi_account_radio(monkeypatch, mock_args, capsys, tm
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -933,10 +998,15 @@ def test_init_interactive_radio_keyboard_interrupt(monkeypatch, mock_args, capsy
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -963,10 +1033,15 @@ def test_init_interactive_checkbox_keyboard_interrupt(monkeypatch, mock_args, ca
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_DIR", config_dir)
     monkeypatch.setattr("mxctl.commands.mail.setup.CONFIG_FILE", config_file)
 
-    lines = "\n".join([
-        _make_account_line("iCloud", "me@icloud.com", enabled=True),
-        _make_account_line("Gmail", "me@gmail.com", enabled=True),
-    ]) + "\n"
+    lines = (
+        "\n".join(
+            [
+                _make_account_line("iCloud", "me@icloud.com", enabled=True),
+                _make_account_line("Gmail", "me@gmail.com", enabled=True),
+            ]
+        )
+        + "\n"
+    )
     mock_run = Mock(return_value=lines)
     monkeypatch.setattr("mxctl.commands.mail.setup.run", mock_run)
 
@@ -988,6 +1063,7 @@ def test_init_interactive_checkbox_keyboard_interrupt(monkeypatch, mock_args, ca
 # ---------------------------------------------------------------------------
 # _radio_select — raw terminal mode
 # ---------------------------------------------------------------------------
+
 
 def _mock_stdin(monkeypatch):
     """Mock sys.stdin.fileno() to return 0 (needed in pytest where stdin is a pseudofile)."""
@@ -1075,6 +1151,7 @@ def test_radio_select_ctrl_c_raises(monkeypatch):
 # ---------------------------------------------------------------------------
 # _checkbox_select — raw terminal mode
 # ---------------------------------------------------------------------------
+
 
 def test_checkbox_select_enter_none(monkeypatch):
     """_checkbox_select: Enter with no toggles returns empty list."""
@@ -1191,6 +1268,7 @@ def test_checkbox_select_multiple_selected(monkeypatch):
 # register() wires cmd_init to 'init' subcommand
 # ---------------------------------------------------------------------------
 
+
 def test_register(monkeypatch):
     """register() adds 'init' subcommand."""
     import argparse
@@ -1202,5 +1280,210 @@ def test_register(monkeypatch):
     register(subs)
 
     args = parser.parse_args(["init", "--json"])
+    assert args.json is True
+    assert hasattr(args, "func")
+
+
+# ===========================================================================
+# cmd_ai_setup tests
+# ===========================================================================
+
+
+def _patch_ai_targets(monkeypatch, tmp_path):
+    """Redirect all _AI_TOOL_TARGETS paths into tmp_path for isolation."""
+    targets = {
+        "Claude Code": (str(tmp_path / "CLAUDE.md"), "global"),
+        "Cursor": (str(tmp_path / ".cursorrules"), "project"),
+        "Windsurf": (str(tmp_path / ".windsurfrules"), "project"),
+    }
+    monkeypatch.setattr("mxctl.commands.mail.setup._AI_TOOL_TARGETS", targets)
+    return targets
+
+
+def test_ai_setup_claude_code_new_file(monkeypatch, mock_args, capsys, tmp_path):
+    """Claude Code selected; CLAUDE.md doesn't exist — creates and writes snippet."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    inputs = iter(["1", "y"])  # select Claude Code, confirm write
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    assert os.path.isfile(target)
+    with open(target) as f:
+        content = f.read()
+    assert _SNIPPET_MARKER in content
+    assert "mxctl inbox" in content
+
+    captured = capsys.readouterr()
+    assert "Done" in captured.out
+
+
+def test_ai_setup_claude_code_appends_to_existing(monkeypatch, mock_args, capsys, tmp_path):
+    """CLAUDE.md exists but has no mxctl section — snippet is appended."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    # Pre-create the file with unrelated content
+    with open(target, "w") as f:
+        f.write("# My Notes\n\nSome existing content.\n")
+
+    inputs = iter(["1", "y"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    with open(target) as f:
+        content = f.read()
+    assert "# My Notes" in content  # original preserved
+    assert _SNIPPET_MARKER in content  # snippet appended
+
+
+def test_ai_setup_already_configured(monkeypatch, mock_args, capsys, tmp_path):
+    """File already contains the mxctl snippet — skips without re-appending."""
+    from mxctl.commands.mail.setup import _MXCTL_AI_SNIPPET, _SNIPPET_MARKER, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    with open(target, "w") as f:
+        f.write(_MXCTL_AI_SNIPPET)
+
+    inputs = iter(["1"])  # select Claude Code — no confirm prompt should appear
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    with open(target) as f:
+        content = f.read()
+    # Snippet should appear exactly once
+    assert content.count(_SNIPPET_MARKER) == 1
+
+    captured = capsys.readouterr()
+    assert "already configured" in captured.out
+
+
+def test_ai_setup_user_declines(monkeypatch, mock_args, capsys, tmp_path):
+    """User selects a tool but answers 'n' at the confirm prompt — no file written."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    inputs = iter(["1", "n"])  # select Claude Code, decline
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    assert not os.path.isfile(target)
+    captured = capsys.readouterr()
+    assert "Cancelled" in captured.out
+
+
+def test_ai_setup_other_prints_snippet(monkeypatch, mock_args, capsys, tmp_path):
+    """'Other (copy-paste)' selection prints the snippet and writes no file."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    _patch_ai_targets(monkeypatch, tmp_path)
+
+    inputs = iter(["4"])  # select "Other (copy-paste)"
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    captured = capsys.readouterr()
+    assert _SNIPPET_MARKER in captured.out
+    # No files written in tmp_path
+    assert not any(tmp_path.iterdir())
+
+
+def test_ai_setup_skip(monkeypatch, mock_args, capsys, tmp_path):
+    """'Skip' selection exits cleanly with no file written."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    _patch_ai_targets(monkeypatch, tmp_path)
+
+    inputs = iter(["5"])  # select "Skip"
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    captured = capsys.readouterr()
+    assert "Skipped" in captured.out
+    assert not any(tmp_path.iterdir())
+
+
+def test_ai_setup_cursor(monkeypatch, mock_args, capsys, tmp_path):
+    """Cursor selection writes .cursorrules into the target path."""
+    from mxctl.commands.mail.setup import _SNIPPET_MARKER, cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Cursor"][0]
+
+    inputs = iter(["2", "y"])  # select Cursor, confirm
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args())
+
+    assert os.path.isfile(target)
+    with open(target) as f:
+        assert _SNIPPET_MARKER in f.read()
+
+
+def test_ai_setup_json_output(monkeypatch, mock_args, capsys, tmp_path):
+    """--json flag emits a JSON result after writing."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    targets = _patch_ai_targets(monkeypatch, tmp_path)
+    target = targets["Claude Code"][0]
+
+    inputs = iter(["1", "y"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    cmd_ai_setup(mock_args(json=True))
+
+    captured = capsys.readouterr()
+    import json as _json
+
+    # format_output may pretty-print JSON across multiple lines; collect the full blob
+    out = captured.out
+    start = out.find("{")
+    end = out.rfind("}") + 1
+    assert start != -1, "Expected JSON object in output"
+    data = _json.loads(out[start:end])
+    assert data["status"] == "written"
+    assert data["file"] == target
+
+
+def test_ai_setup_keyboard_interrupt_at_selection(monkeypatch, mock_args, capsys, tmp_path):
+    """KeyboardInterrupt during tool selection exits cleanly."""
+    from mxctl.commands.mail.setup import cmd_ai_setup
+
+    _patch_ai_targets(monkeypatch, tmp_path)
+
+    monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(KeyboardInterrupt()))
+
+    cmd_ai_setup(mock_args())  # should not raise
+
+    captured = capsys.readouterr()
+    assert "cancelled" in captured.out.lower()
+
+
+def test_register_includes_ai_setup():
+    """register() adds both 'init' and 'ai-setup' subcommands."""
+    import argparse
+
+    from mxctl.commands.mail.setup import register
+
+    parser = argparse.ArgumentParser()
+    subs = parser.add_subparsers(dest="command")
+    register(subs)
+
+    args = parser.parse_args(["ai-setup", "--json"])
     assert args.json is True
     assert hasattr(args, "func")
