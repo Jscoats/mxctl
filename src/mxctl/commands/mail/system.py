@@ -39,19 +39,7 @@ def cmd_check(args) -> None:
 
 def get_headers(account: str, mailbox: str, message_id: int) -> dict:
     """Return parsed email headers dict for the given message."""
-    acct_escaped = escape(account)
-    mb_escaped = escape(mailbox)
-
-    script = f"""
-    tell application "Mail"
-        set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
-        set theMsg to first message of mb whose id is {message_id}
-        return all headers of theMsg
-    end tell
-    """
-
-    result = run(script)
-    return parse_email_headers(result)
+    return parse_email_headers(get_raw_headers(account, mailbox, message_id))
 
 
 def get_raw_headers(account: str, mailbox: str, message_id: int) -> str:

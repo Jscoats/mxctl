@@ -486,7 +486,7 @@ class TestNotJunkGmailPaths:
         from mxctl.commands.mail.actions import cmd_not_junk
 
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_account", lambda _: "Gmail")
-        monkeypatch.setattr("mxctl.config.get_gmail_accounts", lambda: ["Gmail"])
+        monkeypatch.setattr("mxctl.commands.mail.actions.get_gmail_accounts", lambda: ["Gmail"])
         # resolve_mailbox("Junk") returns "[Gmail]/Spam" for Gmail, so candidates start with that
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_mailbox", lambda acct, mb: "[Gmail]/Spam" if mb == "Junk" else mb)
 
@@ -517,7 +517,7 @@ class TestNotJunkGmailPaths:
         from mxctl.commands.mail.actions import cmd_not_junk
 
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("mxctl.config.get_gmail_accounts", lambda: [])
+        monkeypatch.setattr("mxctl.commands.mail.actions.get_gmail_accounts", lambda: [])
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_mailbox", lambda acct, mb: mb)
 
         # Mock the subprocess for fetching original subject/sender - SUCCEEDS
@@ -542,7 +542,7 @@ class TestNotJunkGmailPaths:
         from mxctl.commands.mail.actions import cmd_not_junk
 
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_account", lambda _: "iCloud")
-        monkeypatch.setattr("mxctl.config.get_gmail_accounts", lambda: [])
+        monkeypatch.setattr("mxctl.commands.mail.actions.get_gmail_accounts", lambda: [])
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_mailbox", lambda acct, mb: mb)
 
         # Mock subprocess.run to raise an exception (e.g. OSError)
@@ -564,7 +564,7 @@ class TestNotJunkGmailPaths:
         from mxctl.commands.mail.actions import cmd_not_junk
 
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_account", lambda _: "Gmail")
-        monkeypatch.setattr("mxctl.config.get_gmail_accounts", lambda: ["Gmail"])
+        monkeypatch.setattr("mxctl.commands.mail.actions.get_gmail_accounts", lambda: ["Gmail"])
         # resolve_mailbox returns "Junk" as-is (not mapping to [Gmail]/Spam),
         # so [Gmail]/Spam is NOT already in candidates and gets appended
         monkeypatch.setattr("mxctl.commands.mail.actions.resolve_mailbox", lambda acct, mb: mb)

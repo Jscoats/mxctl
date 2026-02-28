@@ -5,11 +5,12 @@ import re
 import socket
 import ssl
 import subprocess
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 
-from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT, FIELD_SEPARATOR, resolve_account
+from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT, FIELD_SEPARATOR, get_gmail_accounts, resolve_account
 from mxctl.util.applescript import escape, run, validate_msg_id
 from mxctl.util.applescript_templates import set_message_property
 from mxctl.util.formatting import die, format_output, truncate
@@ -355,8 +356,6 @@ def cmd_unsubscribe(args) -> None:
 
 def cmd_junk(args) -> None:
     """Mark a message as junk or spam."""
-    import sys
-
     account, mailbox, _, _ = resolve_message_context(args)
     message_id = validate_msg_id(args.id)
 
@@ -397,8 +396,6 @@ def _try_not_junk_in_mailbox(
     Returns the message subject string on success, None if the message or mailbox
     was not found.
     """
-    import subprocess as _subprocess
-
     if subject and sender:
         # Search by subject + sender — avoids stale-ID problem after cross-mailbox moves
         subj_esc = escape(subject)
@@ -429,7 +426,7 @@ def _try_not_junk_in_mailbox(
             return msgSubject
         end tell
         """
-    result = _subprocess.run(
+    result = subprocess.run(
         ["osascript", "-e", script],
         capture_output=True,
         text=True,
@@ -457,8 +454,6 @@ def not_junk(account: str, message_id: int, custom_mailbox: str | None = None) -
 
     Returns a result dict on success, or raises SystemExit on failure.
     """
-    import sys
-
     acct_escaped = escape(account)
     inbox_mailbox = resolve_mailbox(account, "INBOX")
     inbox_escaped = escape(inbox_mailbox)
@@ -470,8 +465,6 @@ def not_junk(account: str, message_id: int, custom_mailbox: str | None = None) -
     orig_subject = ""
     orig_sender = ""
     try:
-        import subprocess as _subprocess
-
         fetch_script = f"""
         tell application "Mail"
             set acct to account "{acct_escaped}"
@@ -480,7 +473,7 @@ def not_junk(account: str, message_id: int, custom_mailbox: str | None = None) -
             return (subject of theMsg) & "{FIELD_SEPARATOR}" & (sender of theMsg)
         end tell
         """
-        fetch_result = _subprocess.run(
+        fetch_result = subprocess.run(
             ["osascript", "-e", fetch_script],
             capture_output=True,
             text=True,
@@ -500,8 +493,6 @@ def not_junk(account: str, message_id: int, custom_mailbox: str | None = None) -
         # Build a prioritized list of junk folder candidates
         junk_primary = resolve_mailbox(account, "Junk")
         candidates = [junk_primary]
-        from mxctl.config import get_gmail_accounts
-
         if account in get_gmail_accounts():
             if "[Gmail]/Spam" not in candidates:
                 candidates.append("[Gmail]/Spam")
