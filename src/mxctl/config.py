@@ -234,3 +234,29 @@ def get_gmail_accounts() -> list[str]:
     """Return list of account names configured as Gmail accounts."""
     cfg = get_config(required=False, warn=False)
     return cfg.get("mail", {}).get("gmail_accounts", [])
+
+
+def get_todoist_processed() -> dict:
+    """Return the todoist_processed mapping from state.json.
+
+    Returns a dict keyed by message ID string with values:
+        {"task_id": "...", "created": "YYYY-MM-DD"}
+    """
+    state = get_state()
+    return state.get("todoist_processed", {})
+
+
+def save_todoist_processed(message_id: int, task_id: str, created: str) -> None:
+    """Record that a message was sent to Todoist.
+
+    Args:
+        message_id: Mail.app numeric message ID.
+        task_id: The Todoist task ID returned by the API.
+        created: ISO date string (YYYY-MM-DD) when the task was created.
+    """
+    state = get_state()
+    state.setdefault("todoist_processed", {})[str(message_id)] = {
+        "task_id": task_id,
+        "created": created,
+    }
+    _save_json(STATE_FILE, state)

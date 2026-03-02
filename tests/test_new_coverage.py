@@ -300,10 +300,12 @@ class TestTodoistIntegration:
         defaults.update(kwargs)
         return Namespace(**defaults)
 
+    @patch("mxctl.commands.mail.todoist_integration.save_todoist_processed")
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_success_without_project(self, mock_urlopen, mock_config, mock_run, capsys):
+    def test_success_without_project(self, mock_urlopen, mock_config, mock_run, mock_get_processed, mock_save_processed, capsys):
         """Task created in Todoist inbox when --project is not provided."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -330,10 +332,12 @@ class TestTodoistIntegration:
         # Only one urlopen call (no project lookup)
         assert mock_urlopen.call_count == 1
 
+    @patch("mxctl.commands.mail.todoist_integration.save_todoist_processed")
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_success_with_project(self, mock_urlopen, mock_config, mock_run, capsys):
+    def test_success_with_project(self, mock_urlopen, mock_config, mock_run, mock_get_processed, mock_save_processed, capsys):
         """When --project is set, resolves project ID first, then creates task."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -367,10 +371,11 @@ class TestTodoistIntegration:
         # Two calls: project lookup + task creation
         assert mock_urlopen.call_count == 2
 
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_project_not_found_dies(self, mock_urlopen, mock_config, mock_run):
+    def test_project_not_found_dies(self, mock_urlopen, mock_config, mock_run, mock_get_processed):
         """When named project doesn't exist, die() is called."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -388,8 +393,9 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.get_config")
-    def test_missing_api_token_dies(self, mock_config, capsys):
+    def test_missing_api_token_dies(self, mock_config, mock_get_processed, capsys):
         """Should die() when todoist_api_token not in config."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -400,10 +406,11 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_http_error_dies(self, mock_urlopen, mock_config, mock_run):
+    def test_http_error_dies(self, mock_urlopen, mock_config, mock_run, mock_get_processed):
         """When Todoist API returns HTTP error, die() is called."""
         import urllib.error
 
@@ -427,10 +434,12 @@ class TestTodoistIntegration:
             cmd_to_todoist(args)
         assert exc_info.value.code == 1
 
+    @patch("mxctl.commands.mail.todoist_integration.save_todoist_processed")
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_creates_task_json_output(self, mock_urlopen, mock_config, mock_run, capsys):
+    def test_creates_task_json_output(self, mock_urlopen, mock_config, mock_run, mock_get_processed, mock_save_processed, capsys):
         """--json flag returns structured task data."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -961,8 +970,9 @@ class TestTodoistTimeoutAndTokenValidation:
         defaults.update(kwargs)
         return Namespace(**defaults)
 
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.get_config")
-    def test_empty_string_token_dies(self, mock_config, capsys):
+    def test_empty_string_token_dies(self, mock_config, mock_get_processed, capsys):
         """Empty-string token (passes 'if not token' check but is invalid) is caught early."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
@@ -975,10 +985,11 @@ class TestTodoistTimeoutAndTokenValidation:
         out = capsys.readouterr()
         assert "invalid" in out.err.lower() or "invalid" in out.out.lower()
 
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_socket_timeout_on_task_create_dies(self, mock_urlopen, mock_config, mock_run, capsys):
+    def test_socket_timeout_on_task_create_dies(self, mock_urlopen, mock_config, mock_run, mock_get_processed, capsys):
         """socket.timeout during task creation produces a clean error (no hang)."""
 
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
@@ -994,10 +1005,12 @@ class TestTodoistTimeoutAndTokenValidation:
         out = capsys.readouterr()
         assert "timed out" in out.err.lower() or "timeout" in out.err.lower()
 
+    @patch("mxctl.commands.mail.todoist_integration.save_todoist_processed")
+    @patch("mxctl.commands.mail.todoist_integration.get_todoist_processed", return_value={})
     @patch("mxctl.commands.mail.todoist_integration.run")
     @patch("mxctl.commands.mail.todoist_integration.get_config")
     @patch("mxctl.commands.mail.todoist_integration.urllib.request.urlopen")
-    def test_urlopen_has_timeout_kwarg(self, mock_urlopen, mock_config, mock_run, capsys):
+    def test_urlopen_has_timeout_kwarg(self, mock_urlopen, mock_config, mock_run, mock_get_processed, mock_save_processed, capsys):
         """urlopen is called with an explicit timeout= kwarg (prevents silent hang)."""
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
         from mxctl.config import APPLESCRIPT_TIMEOUT_SHORT

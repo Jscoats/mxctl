@@ -1439,6 +1439,8 @@ class TestTodoistMissingLines:
         monkeypatch.setattr(
             "mxctl.commands.mail.todoist_integration.run", Mock(return_value=f"Subject{FIELD_SEPARATOR}sender@x.com{FIELD_SEPARATOR}Monday")
         )
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_todoist_processed", lambda: {})
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.save_todoist_processed", lambda *a, **kw: None)
 
     def test_message_read_fails(self, monkeypatch):
         """Too few fields from AppleScript dies (line 56)."""
@@ -1446,6 +1448,7 @@ class TestTodoistMissingLines:
 
         monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_config", lambda: {"todoist_api_token": "token"})
         monkeypatch.setattr("mxctl.commands.mail.todoist_integration.run", Mock(return_value="only-subject"))
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_todoist_processed", lambda: {})
 
         with pytest.raises(SystemExit):
             cmd_to_todoist(self._todoist_args())
@@ -1570,6 +1573,7 @@ class TestTodoistMissingLines:
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_config", lambda: {"todoist_api_token": ""})
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_todoist_processed", lambda: {})
 
         with pytest.raises(SystemExit):
             cmd_to_todoist(self._todoist_args())
@@ -1579,6 +1583,7 @@ class TestTodoistMissingLines:
         from mxctl.commands.mail.todoist_integration import cmd_to_todoist
 
         monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_config", lambda: {"todoist_api_token": 12345})
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_todoist_processed", lambda: {})
 
         with pytest.raises(SystemExit):
             cmd_to_todoist(self._todoist_args())

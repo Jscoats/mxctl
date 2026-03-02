@@ -183,6 +183,8 @@ class TestCmdToTodoist:
             "mxctl.commands.mail.todoist_integration.get_config",
             lambda: {"todoist_api_token": "test-token-123"},
         )
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.get_todoist_processed", lambda: {})
+        monkeypatch.setattr("mxctl.commands.mail.todoist_integration.save_todoist_processed", lambda *a, **kw: None)
 
         # Mock AppleScript run to return message data
         mock_run = Mock(return_value=f"Test Subject{FIELD_SEPARATOR}sender@example.com{FIELD_SEPARATOR}2026-01-15")

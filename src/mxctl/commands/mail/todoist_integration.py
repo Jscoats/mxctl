@@ -4,11 +4,14 @@ import json
 import ssl
 import urllib.error
 import urllib.request
+from datetime import date
 
 from mxctl.config import (
     APPLESCRIPT_TIMEOUT_SHORT,
     FIELD_SEPARATOR,
     get_config,
+    get_todoist_processed,
+    save_todoist_processed,
 )
 from mxctl.util.applescript import run, validate_msg_id
 from mxctl.util.formatting import die, format_output
@@ -132,6 +135,15 @@ def cmd_to_todoist(args) -> None:
     project = getattr(args, "project", None)
     priority = getattr(args, "priority", 1)
     due = getattr(args, "due", None)
+    force = getattr(args, "force", False)
+
+    # Deduplication check — skip if already processed (unless --force)
+    processed = get_todoist_processed()
+    existing = processed.get(str(message_id))
+    if existing and not force:
+        task_id = existing.get("task_id", "unknown")
+        created = existing.get("created", "unknown")
+        die(f"Message {message_id} was already sent to Todoist on {created} (task ID: {task_id}). Use --force to send again.")
 
     response_data = create_todoist_task(
         account,
@@ -143,6 +155,11 @@ def cmd_to_todoist(args) -> None:
         priority=priority,
         due=due,
     )
+
+    # Persist the processed record to state.json
+    task_id = response_data.get("id", "")
+    today = date.today().isoformat()
+    save_todoist_processed(message_id, str(task_id), today)
 
     subject = response_data.get("content", "")
     task_url = response_data.get("url")
@@ -168,5 +185,6 @@ def register(subparsers) -> None:
     p.add_argument("--project", help="Todoist project name (resolves to project ID via API; task goes to Inbox if omitted)")
     p.add_argument("--priority", type=int, choices=[1, 2, 3, 4], default=1, help="Priority (1-4, 4=highest)")
     p.add_argument("--due", help="Due date (natural language, e.g. 'tomorrow')")
+    p.add_argument("--force", action="store_true", help="Create task even if message was already sent to Todoist")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_to_todoist)
