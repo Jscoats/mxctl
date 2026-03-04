@@ -238,6 +238,10 @@ def test_resolve_mailbox_gmail_translation(monkeypatch):
         "mxctl.util.mail_helpers.get_gmail_accounts",
         lambda: ["ASU Gmail", "Personal Gmail"],
     )
+    monkeypatch.setattr(
+        "mxctl.util.mail_helpers.get_icloud_accounts",
+        lambda: [],
+    )
 
     assert resolve_mailbox("ASU Gmail", "Spam") == "[Gmail]/Spam"
     assert resolve_mailbox("ASU Gmail", "Junk") == "[Gmail]/Spam"
@@ -248,18 +252,47 @@ def test_resolve_mailbox_gmail_translation(monkeypatch):
     assert resolve_mailbox("ASU Gmail", "[Gmail]/Spam") == "[Gmail]/Spam"
 
 
-def test_resolve_mailbox_non_gmail_passthrough(monkeypatch):
-    """resolve_mailbox does not translate names for non-Gmail accounts."""
+def test_resolve_mailbox_icloud_translation(monkeypatch):
+    """resolve_mailbox translates friendly names for iCloud accounts."""
     from mxctl.util.mail_helpers import resolve_mailbox
 
     monkeypatch.setattr(
         "mxctl.util.mail_helpers.get_gmail_accounts",
         lambda: ["ASU Gmail"],
     )
+    monkeypatch.setattr(
+        "mxctl.util.mail_helpers.get_icloud_accounts",
+        lambda: ["iCloud"],
+    )
 
-    assert resolve_mailbox("iCloud", "Trash") == "Trash"
-    assert resolve_mailbox("iCloud", "Spam") == "Spam"
+    assert resolve_mailbox("iCloud", "Trash") == "Deleted Messages"
+    assert resolve_mailbox("iCloud", "Deleted") == "Deleted Messages"
+    assert resolve_mailbox("iCloud", "Spam") == "Junk"
+    assert resolve_mailbox("iCloud", "Sent") == "Sent Messages"
+    assert resolve_mailbox("iCloud", "Archive") == "Archive"
     assert resolve_mailbox("iCloud", "INBOX") == "INBOX"
+    # Names that already match iCloud's actual names pass through
+    assert resolve_mailbox("iCloud", "Junk") == "Junk"
+    assert resolve_mailbox("iCloud", "Deleted Messages") == "Deleted Messages"
+    assert resolve_mailbox("iCloud", "Sent Messages") == "Sent Messages"
+
+
+def test_resolve_mailbox_non_configured_passthrough(monkeypatch):
+    """resolve_mailbox does not translate names for unconfigured accounts."""
+    from mxctl.util.mail_helpers import resolve_mailbox
+
+    monkeypatch.setattr(
+        "mxctl.util.mail_helpers.get_gmail_accounts",
+        lambda: ["ASU Gmail"],
+    )
+    monkeypatch.setattr(
+        "mxctl.util.mail_helpers.get_icloud_accounts",
+        lambda: [],
+    )
+
+    assert resolve_mailbox("Outlook", "Trash") == "Trash"
+    assert resolve_mailbox("Outlook", "Spam") == "Spam"
+    assert resolve_mailbox("Outlook", "INBOX") == "INBOX"
 
 
 # ---------------------------------------------------------------------------

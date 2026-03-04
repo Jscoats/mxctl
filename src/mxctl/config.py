@@ -236,6 +236,12 @@ def get_gmail_accounts() -> list[str]:
     return cfg.get("mail", {}).get("gmail_accounts", [])
 
 
+def get_icloud_accounts() -> list[str]:
+    """Return list of account names configured as iCloud accounts."""
+    cfg = get_config(required=False, warn=False)
+    return cfg.get("mail", {}).get("icloud_accounts", [])
+
+
 def get_todoist_processed() -> dict:
     """Return the todoist_processed mapping from state.json.
 

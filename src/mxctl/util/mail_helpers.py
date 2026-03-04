@@ -8,7 +8,7 @@ import sys
 from argparse import Namespace
 from email.utils import parseaddr
 
-from mxctl.config import CONFIG_FILE, DEFAULT_MAILBOX, get_gmail_accounts, resolve_account
+from mxctl.config import CONFIG_FILE, DEFAULT_MAILBOX, get_gmail_accounts, get_icloud_accounts, resolve_account
 from mxctl.util.applescript import escape
 from mxctl.util.formatting import die
 
@@ -26,27 +26,44 @@ GMAIL_MAILBOX_MAP: dict[str, str] = {
     "important": "[Gmail]/Important",
 }
 
+# Friendly name → iCloud mailbox name in Apple Mail
+ICLOUD_MAILBOX_MAP: dict[str, str] = {
+    "trash": "Deleted Messages",
+    "deleted": "Deleted Messages",
+    "spam": "Junk",
+    "sent": "Sent Messages",
+    "archive": "Archive",
+}
+
 
 def resolve_mailbox(account: str, mailbox: str) -> str:
-    """Translate friendly mailbox names to Gmail IMAP names when applicable.
+    """Translate friendly mailbox names for Gmail and iCloud accounts.
 
-    If the account is configured as a Gmail account and the mailbox name
-    matches a known alias, returns the correct [Gmail]/... folder name.
-    Otherwise returns the mailbox unchanged.
+    If the account is configured as a Gmail account, translates friendly
+    names to [Gmail]/... IMAP paths. If configured as an iCloud account,
+    translates friendly names to iCloud-specific mailbox names (e.g.,
+    "Trash" -> "Deleted Messages"). Otherwise returns the mailbox unchanged.
 
     Examples:
         resolve_mailbox("ASU Gmail", "Spam")   -> "[Gmail]/Spam"
         resolve_mailbox("ASU Gmail", "Trash")  -> "[Gmail]/Trash"
-        resolve_mailbox("iCloud", "Trash")     -> "Trash"
+        resolve_mailbox("iCloud", "Trash")     -> "Deleted Messages"
+        resolve_mailbox("iCloud", "Spam")      -> "Junk"
+        resolve_mailbox("iCloud", "Sent")      -> "Sent Messages"
+        resolve_mailbox("iCloud", "Junk")      -> "Junk"  (passthrough, already correct)
         resolve_mailbox("ASU Gmail", "[Gmail]/Spam") -> "[Gmail]/Spam"  (passthrough)
         resolve_mailbox("ASU Gmail", "INBOX")  -> "INBOX"  (passthrough)
     """
-    if account not in get_gmail_accounts():
-        return mailbox
-    # Already a [Gmail]/... path or INBOX — pass through unchanged
-    if mailbox.startswith("[Gmail]/") or mailbox.upper() == "INBOX":
-        return mailbox
-    return GMAIL_MAILBOX_MAP.get(mailbox.lower(), mailbox)
+    if account in get_gmail_accounts():
+        # Already a [Gmail]/... path or INBOX — pass through unchanged
+        if mailbox.startswith("[Gmail]/") or mailbox.upper() == "INBOX":
+            return mailbox
+        return GMAIL_MAILBOX_MAP.get(mailbox.lower(), mailbox)
+    if account in get_icloud_accounts():
+        if mailbox.upper() == "INBOX":
+            return mailbox
+        return ICLOUD_MAILBOX_MAP.get(mailbox.lower(), mailbox)
+    return mailbox
 
 
 def resolve_message_context(args: Namespace) -> tuple[str, str, str, str]:
