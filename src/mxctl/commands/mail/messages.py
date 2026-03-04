@@ -7,6 +7,7 @@ import urllib.request
 from datetime import timedelta
 
 from mxctl.config import (
+    APPLESCRIPT_TIMEOUT_DEFAULT,
     APPLESCRIPT_TIMEOUT_LONG,
     DEFAULT_BODY_LENGTH,
     DEFAULT_MESSAGE_LIMIT,
@@ -101,9 +102,11 @@ def get_messages(
     account: str,
     mailbox: str,
     limit: int = 25,
+    offset: int = 0,
     unread_only: bool = False,
     after: str | None = None,
     before: str | None = None,
+    no_preview: bool = False,
 ) -> list[dict]:
     """Fetch messages from a mailbox with optional filtering. Returns list of dicts."""
     acct_escaped = escape(account)
@@ -122,33 +125,43 @@ def get_messages(
     filter_clause = " and ".join(filters) if filters else ""
     whose_clause = f"whose {filter_clause}" if filter_clause else ""
 
-    script = f"""
-    tell application "Mail"
-        set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
-        set allMsgs to (every message of mb {whose_clause})
-        set msgCount to count of allMsgs
-        set actualLimit to {limit}
-        if msgCount < actualLimit then set actualLimit to msgCount
-        if actualLimit = 0 then return ""
-        set output to ""
-        repeat with i from 1 to actualLimit
-            set m to item i of allMsgs
-            set msgPreview to ""
-            try
+    # Build preview retrieval block — skip entirely with --no-preview to avoid
+    # hanging on emails with very large bodies
+    if no_preview:
+        preview_block = '            set msgPreview to ""'
+    else:
+        preview_block = """            try
                 set msgPreview to content of m
                 if length of msgPreview > 100 then
                     set msgPreview to text 1 thru 100 of msgPreview
                 end if
             on error
                 set msgPreview to ""
-            end try
+            end try"""
+
+    script = f"""
+    tell application "Mail"
+        set mb to mailbox "{mb_escaped}" of account "{acct_escaped}"
+        set allMsgs to (every message of mb {whose_clause})
+        set msgCount to count of allMsgs
+        set startIdx to {offset} + 1
+        set endIdx to {offset} + {limit}
+        if endIdx > msgCount then set endIdx to msgCount
+        if startIdx > msgCount then return ""
+        set output to ""
+        repeat with i from startIdx to endIdx
+            set m to item i of allMsgs
+            set msgPreview to ""
+{preview_block}
             set output to output & (id of m) & "{FIELD_SEPARATOR}" & (subject of m) & "{FIELD_SEPARATOR}" & (sender of m) & "{FIELD_SEPARATOR}" & (date received of m) & "{FIELD_SEPARATOR}" & (read status of m) & "{FIELD_SEPARATOR}" & (flagged status of m) & "{FIELD_SEPARATOR}" & msgPreview & linefeed
         end repeat
         return output
     end tell
     """
 
-    result = run(script)
+    # Use longer timeout when offset pagination may hit slow emails
+    script_timeout = APPLESCRIPT_TIMEOUT_LONG if offset > 0 else APPLESCRIPT_TIMEOUT_DEFAULT
+    result = run(script, timeout=script_timeout)
 
     if not result.strip():
         return []
@@ -178,7 +191,11 @@ def cmd_list(args) -> None:
     before = getattr(args, "before", None)
     use_ai_summary = getattr(args, "summary", False)
 
-    messages = get_messages(account, mailbox, limit=limit, unread_only=unread_only, after=after, before=before)
+    offset = getattr(args, "offset", 0) or 0
+    no_preview = getattr(args, "no_preview", False)
+    messages = get_messages(
+        account, mailbox, limit=limit, offset=offset, unread_only=unread_only, after=after, before=before, no_preview=no_preview
+    )
 
     if not messages:
         filter_desc = []
@@ -631,8 +648,10 @@ def register(subparsers) -> None:
     p.add_argument("-a", "--account", help="Mail account name")
     p.add_argument("--unread", action="store_true", help="Only show unread messages")
     p.add_argument("--limit", type=int, default=DEFAULT_MESSAGE_LIMIT, help="Max messages to show")
+    p.add_argument("--offset", type=int, default=0, help="Skip first N messages (for pagination)")
     p.add_argument("--after", help="Filter messages after date (YYYY-MM-DD)")
     p.add_argument("--before", help="Filter messages before date (YYYY-MM-DD)")
+    p.add_argument("--no-preview", action="store_true", help="Skip content preview (faster, avoids timeout on large emails)")
     p.add_argument("--summary", action="store_true", help="Use AI to generate one-liner previews")
     p.add_argument("--json", action="store_true", help="Output as JSON")
     p.set_defaults(func=cmd_list)
